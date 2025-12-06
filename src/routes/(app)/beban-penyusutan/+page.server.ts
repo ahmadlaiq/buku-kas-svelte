@@ -1,25 +1,42 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import db from '$lib/server/database';
+import prisma from '$lib/server/prisma';
 
 export const load: PageServerLoad = async ({ url }) => {
   const month = url.searchParams.get('month') || new Date().toISOString().slice(0, 7);
+  const startOfMonth = new Date(`${month}-01T00:00:00Z`);
+  const endOfMonth = new Date(startOfMonth);
+  endOfMonth.setMonth(endOfMonth.getMonth() + 1);
   
-  const data = db.prepare(`
-    SELECT * FROM beban_penyusutan 
-    WHERE strftime('%Y-%m', tanggal) = ?
-    ORDER BY tanggal DESC, created_at DESC
-  `).all(month);
+  const data = await prisma.bebanPenyusutan.findMany({
+    where: {
+      tanggal: {
+        gte: startOfMonth,
+        lt: endOfMonth
+      }
+    },
+    orderBy: [
+      { tanggal: 'desc' },
+      { created_at: 'desc' }
+    ]
+  });
 
-  const total = db.prepare(`
-    SELECT COALESCE(SUM(nilai_penyusutan), 0) as total 
-    FROM beban_penyusutan 
-    WHERE strftime('%Y-%m', tanggal) = ?
-  `).get(month) as { total: number };
+  const totalResult = await prisma.bebanPenyusutan.aggregate({
+    _sum: { nilai_penyusutan: true },
+    where: {
+      tanggal: {
+        gte: startOfMonth,
+        lt: endOfMonth
+      }
+    }
+  });
 
   return {
-    bebanPenyusutan: data,
-    total: total.total,
+    bebanPenyusutan: data.map(p => ({
+      ...p,
+      tanggal: p.tanggal.toISOString().split('T')[0]
+    })),
+    total: totalResult._sum.nilai_penyusutan || 0,
     selectedMonth: month
   };
 };
@@ -40,25 +57,34 @@ export const actions: Actions = {
     }
 
     try {
-      db.prepare(`
-        INSERT INTO beban_penyusutan (tanggal, nama_aset, nilai_aset, umur_ekonomis, nilai_penyusutan)
-        VALUES (?, ?, ?, ?, ?)
-      `).run(tanggal, nama_aset, nilai_aset, umur_ekonomis, nilai_penyusutan);
+      await prisma.bebanPenyusutan.create({
+        data: {
+          tanggal: new Date(tanggal),
+          nama_aset,
+          nilai_aset,
+          umur_ekonomis,
+          nilai_penyusutan
+        }
+      });
 
       return { success: true };
     } catch (error) {
+      console.error('Create beban penyusutan error:', error);
       return fail(500, { error: 'Gagal menyimpan data' });
     }
   },
 
   delete: async ({ request }) => {
     const formData = await request.formData();
-    const id = formData.get('id') as string;
+    const id = parseInt(formData.get('id') as string);
 
     try {
-      db.prepare('DELETE FROM beban_penyusutan WHERE id = ?').run(id);
+      await prisma.bebanPenyusutan.delete({
+        where: { id }
+      });
       return { success: true };
     } catch (error) {
+      console.error('Delete beban penyusutan error:', error);
       return fail(500, { error: 'Gagal menghapus data' });
     }
   }

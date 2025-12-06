@@ -50,3 +50,5 @@ Thumbs.db
 
 # Build cache
 .turbo
+
+/../generated/prisma

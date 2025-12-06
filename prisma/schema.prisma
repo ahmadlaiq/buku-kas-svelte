@@ -1,0 +1,66 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  username   String   @unique
+  password   String
+  full_name  String   @map("full_name")
+  created_at DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model Pendapatan {
+  id         Int      @id @default(autoincrement())
+  tanggal    DateTime
+  kategori   String
+  deskripsi  String?
+  jumlah     Float
+  created_at DateTime @default(now()) @map("created_at")
+
+  @@map("pendapatan")
+}
+
+model Pengeluaran {
+  id         Int      @id @default(autoincrement())
+  tanggal    DateTime
+  kategori   String
+  deskripsi  String?
+  jumlah     Float
+  created_at DateTime @default(now()) @map("created_at")
+
+  @@map("pengeluaran")
+}
+
+model BebanOperasional {
+  id         Int      @id @default(autoincrement())
+  tanggal    DateTime
+  kategori   String
+  deskripsi  String?
+  jumlah     Float
+  created_at DateTime @default(now()) @map("created_at")
+
+  @@map("beban_operasional")
+}
+
+model BebanPenyusutan {
+  id               Int      @id @default(autoincrement())
+  tanggal          DateTime
+  nama_aset        String   @map("nama_aset")
+  nilai_aset       Float    @map("nilai_aset")
+  umur_ekonomis    Int      @map("umur_ekonomis")
+  nilai_penyusutan Float    @map("nilai_penyusutan")
+  created_at       DateTime @default(now()) @map("created_at")
+
+  @@map("beban_penyusutan")
+}

@@ -94,17 +94,22 @@ Password: admin123
 ```
 buku-kas-svelte/
 ├── docs/                          # Dokumentasi lengkap per menu
+│   ├── 00-instalasi.md
 │   ├── 01-dashboard.md
 │   ├── 02-pendapatan.md
 │   ├── 03-pengeluaran.md
 │   ├── 04-beban-operasional.md
 │   ├── 05-beban-penyusutan.md
 │   ├── 06-laporan-laba-rugi.md
-│   └── 07-login.md
+│   ├── 07-login.md
+│   └── 08-deployment-turso.md
+├── prisma/
+│   └── schema.prisma            # Prisma schema definition
 ├── src/
 │   ├── lib/
 │   │   ├── server/
-│   │   │   └── database.ts        # Setup & konfigurasi database
+│   │   │   ├── database.ts        # Database initialization
+│   │   │   └── prisma.ts          # Prisma client singleton
 │   │   └── stores/
 │   │       └── auth.ts            # Store autentikasi
 │   ├── routes/
@@ -121,7 +126,8 @@ buku-kas-svelte/
 │   │       └── auth/
 │   ├── app.css                    # Global styles & design system
 │   └── app.html
-├── salon.db                       # SQLite database (auto-generated)
+├── dev.db                         # SQLite database (local dev)
+├── .env                           # Environment variables
 ├── package.json
 ├── svelte.config.js
 └── README.md
@@ -218,6 +224,7 @@ Aplikasi menggunakan custom design system dengan:
 
 Setiap menu memiliki dokumentasi detail di folder `docs/`:
 
+0. [Instalasi](docs/00-instalasi.md) - Panduan instalasi step-by-step
 1. [Dashboard](docs/01-dashboard.md) - Ringkasan & navigasi
 2. [Pendapatan](docs/02-pendapatan.md) - Cara mencatat pemasukan
 3. [Pengeluaran](docs/03-pengeluaran.md) - Cara mencatat pengeluaran
@@ -225,6 +232,7 @@ Setiap menu memiliki dokumentasi detail di folder `docs/`:
 5. [Beban Penyusutan](docs/05-beban-penyusutan.md) - Perhitungan penyusutan aset
 6. [Laporan Laba & Rugi](docs/06-laporan-laba-rugi.md) - Analisis keuangan
 7. [Login](docs/07-login.md) - Keamanan & autentikasi
+8. [Deployment dengan Turso](docs/08-deployment-turso.md) - Deploy ke production
 
 ## 🔧 Development
 
@@ -251,7 +259,10 @@ bun run lint
 
 - **Framework**: [SvelteKit 2.x](https://kit.svelte.dev/)
 - **Runtime**: [Bun 1.x](https://bun.sh/)
-- **Database**: [SQLite](https://www.sqlite.org/) dengan [better-sqlite3](https://github.com/WiseLibs/better-sqlite3)
+- **ORM**: [Prisma 5.x](https://www.prisma.io/)
+- **Database**:
+  - Development: [SQLite](https://www.sqlite.org/)
+  - Production: [Turso](https://turso.tech/) (SQLite-compatible edge database)
 - **Authentication**: bcryptjs
 - **Styling**: Custom CSS (no framework)
 - **Type Safety**: TypeScript
@@ -279,10 +290,14 @@ bun add -D @sveltejs/adapter-node
 # Build & deploy ke server Node.js
 ```
 
-#### 2. Vercel / Netlify
+#### 2. Netlify dengan Turso (Recommended)
 
+**Lihat panduan lengkap**: [docs/08-deployment-turso.md](docs/08-deployment-turso.md)
+
+- Setup Turso database
 - Push ke GitHub
-- Connect repository di platform
+- Connect repository di Netlify
+- Set environment variables
 - Auto-deploy on push
 
 #### 3. Static Hosting
