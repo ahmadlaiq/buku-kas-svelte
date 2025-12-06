@@ -1,0 +1,184 @@
+<script lang="ts">
+  import type { PageData } from "./$types";
+
+  let { data }: { data: PageData } = $props();
+
+  function formatCurrency(amount: number) {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(amount);
+  }
+
+  function formatDate(dateStr: string) {
+    return new Date(dateStr).toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  }
+</script>
+
+<svelte:head>
+  <title>Dashboard - Buku Kas Salon</title>
+</svelte:head>
+
+<div>
+  <div class="mb-2xl">
+    <h1 class="mb-sm">📊 Dashboard</h1>
+    <p class="text-muted">Ringkasan keuangan salon Anda bulan ini</p>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">💰 Total Pendapatan</div>
+      <div class="stat-value text-success">
+        {formatCurrency(data.stats.pendapatan)}
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">💸 Total Pengeluaran</div>
+      <div class="stat-value text-error">
+        {formatCurrency(data.stats.pengeluaran)}
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">🏢 Beban Operasional</div>
+      <div class="stat-value text-error">
+        {formatCurrency(data.stats.bebanOperasional)}
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">📉 Beban Penyusutan</div>
+      <div class="stat-value text-error">
+        {formatCurrency(data.stats.bebanPenyusutan)}
+      </div>
+    </div>
+
+    <div class="stat-card" style="grid-column: span 2;">
+      <div class="stat-label">📈 Laba/Rugi Bersih</div>
+      <div
+        class="stat-value"
+        class:text-success={data.stats.labaRugi >= 0}
+        class:text-error={data.stats.labaRugi < 0}
+      >
+        {formatCurrency(data.stats.labaRugi)}
+      </div>
+      <div
+        class="stat-change"
+        class:positive={data.stats.labaRugi >= 0}
+        class:negative={data.stats.labaRugi < 0}
+      >
+        {data.stats.labaRugi >= 0 ? "📈 Untung" : "📉 Rugi"}
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Transactions -->
+  <div
+    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: var(--space-lg);"
+  >
+    <!-- Recent Income -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">💰 Pendapatan Terbaru</h3>
+      </div>
+
+      {#if data.recentPendapatan.length > 0}
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Kategori</th>
+                <th>Jumlah</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each data.recentPendapatan as item}
+                <tr>
+                  <td>{formatDate(item.tanggal)}</td>
+                  <td>
+                    <div class="font-medium">{item.kategori}</div>
+                    {#if item.deskripsi}
+                      <div class="text-sm text-muted">{item.deskripsi}</div>
+                    {/if}
+                  </td>
+                  <td class="font-semibold text-success"
+                    >{formatCurrency(item.jumlah)}</td
+                  >
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      {:else}
+        <p class="text-center text-muted">Belum ada data pendapatan</p>
+      {/if}
+
+      <div class="mt-lg text-center">
+        <a href="/pendapatan" class="btn btn-secondary btn-sm">
+          Lihat Semua →
+        </a>
+      </div>
+    </div>
+
+    <!-- Recent Expenses -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">💸 Pengeluaran Terbaru</h3>
+      </div>
+
+      {#if data.recentPengeluaran.length > 0}
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Kategori</th>
+                <th>Jumlah</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each data.recentPengeluaran as item}
+                <tr>
+                  <td>{formatDate(item.tanggal)}</td>
+                  <td>
+                    <div class="font-medium">{item.kategori}</div>
+                    {#if item.deskripsi}
+                      <div class="text-sm text-muted">{item.deskripsi}</div>
+                    {/if}
+                  </td>
+                  <td class="font-semibold text-error"
+                    >{formatCurrency(item.jumlah)}</td
+                  >
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      {:else}
+        <p class="text-center text-muted">Belum ada data pengeluaran</p>
+      {/if}
+
+      <div class="mt-lg text-center">
+        <a href="/pengeluaran" class="btn btn-secondary btn-sm">
+          Lihat Semua →
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  @media (max-width: 1100px) {
+    div[style*="grid-template-columns"] {
+      grid-template-columns: 1fr !important;
+    }
+  }
+</style>
