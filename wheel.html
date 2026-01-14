@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salon Lucky Draw - Irna</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #fce4ec;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        h1 {
+            color: #880e4f;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 0px rgba(255,255,255,0.5);
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 500px;
+            height: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border-radius: 50%;
+            background: #fff;
+            border: 12px solid #fff;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+        }
+
+        /* Jarum Penunjuk */
+        .pointer {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 70px;
+            background: #d81b60;
+            clip-path: polygon(50% 100%, 0 0, 100% 0);
+            z-index: 10;
+            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3));
+        }
+
+        button {
+            margin-top: 30px;
+            padding: 15px 60px;
+            font-size: 1.5rem;
+            background: linear-gradient(45deg, #ec407a, #d81b60);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(216, 27, 96, 0.5);
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            background: linear-gradient(45deg, #f48fb1, #ec407a);
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(216, 27, 96, 0.6);
+        }
+
+        button:disabled {
+            background: #bdbdbd;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Modal Hasil */
+        .result-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 50px;
+            border-radius: 30px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+            text-align: center;
+            z-index: 100;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 5px solid #f8bbd0;
+            min-width: 350px;
+            backdrop-filter: blur(5px);
+        }
+
+        .result-modal.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            z-index: 90;
+            backdrop-filter: blur(2px);
+        }
+
+        @media (max-width: 600px) {
+            .wheel-container {
+                width: 340px;
+                height: 340px;
+            }
+            h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Salon Irna</h1>
+
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        <canvas id="wheelCanvas" width="500" height="500"></canvas>
+    </div>
+
+    <button id="spinBtn" onclick="spin()">PUTAR</button>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="result-modal" id="resultModal">
+        <h3 style="color:#880e4f; margin:0; font-weight: normal; font-size: 1.2rem;">Selamat Kepada:</h3>
+        
+        <h1 id="winnerName" style="font-size: 3.5rem; color: #d81b60; margin: 10px 0 20px 0; font-weight: 800; line-height: 1;">...</h1>
+        
+        <div style="
+            background-color: #fff0f5; 
+            border: 2px dashed #d81b60; 
+            border-radius: 15px; 
+            padding: 15px; 
+            margin: 0 auto; 
+            width: 80%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transform: rotate(-2deg); /* Miring sedikit biar estetik */
+            transition: transform 0.3s;
+        " onmouseover="this.style.transform='rotate(0deg) scale(1.05)'" onmouseout="this.style.transform='rotate(-2deg)'">
+            
+            <div style="font-size: 0.9rem; color: #ad1457; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">
+                ✨ ANDA MENDAPATKAN ✨
+            </div>
+            <div style="font-size: 1.3rem; font-weight: bold; color: #d81b60;">
+                🎁 Free 10 Pcs 🎁<br>
+                <span style="font-size: 1rem; font-weight: normal; color: #880e4f;">Travel Size Hair Mask</span>
+            </div>
+        </div>
+
+        <button onclick="closeModal()" style="margin-top:25px; padding: 12px 50px; font-size: 1.1rem; border-radius: 50px;">Ambil Hadiah</button>
+    </div>
+
+<script>
+    // --- KONFIGURASI NAMA ---
+    const names = [
+        "Adinda", "Andin", "Anisah", "Diah", "Eni", "Ika", 
+        "Imelda", "Imelda Karla", "Indah", "Ira", "Liana", "Mei", 
+        "Mela", "Nana", "Nita", "Safira", "Sasa", "Shella", 
+        "Sinta", "Sumarni", "Tia", "Tyas", "Winda", "Yuliana", 
+        "Yuni", "Yusna"
+    ];
+
+    // >>> RAHASIA: Target Pemenang <<<
+    const FORCED_WINNER = "Indah"; 
+    
+    const colors = ["#F8BBD0", "#F48FB1", "#CE93D8", "#B39DDB", "#90CAF9", "#80DEEA", "#80CBC4", "#A5D6A7"];
+
+    // --- SETUP AUDIO (Base64 agar single file) ---
+    // Suara "Tick" pendek
+    const tickSound = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"); 
+    // Saya menggunakan trik sintetis di bawah untuk suara lebih smooth, 
+    // tapi ini placeholder object. Nanti kita generate suara pakai Web Audio API biar ringan.
+    
+    // Suara Win (Fanfare pendek) - URL CDN (atau bisa diganti file lokal)
+    // Karena base64 fanfare terlalu panjang untuk chat, saya pakai library tone generator sederhana/audio context.
+    
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playTickSound() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime); // Nada rendah
+        osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    function playWinSound() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        
+        // Simple Major Arpeggio (Ta-da!)
+        const now = audioCtx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C E G C
+        
+        notes.forEach((note, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = note;
+            
+            gain.gain.setValueAtTime(0, now + i*0.1);
+            gain.gain.linearRampToValueAtTime(0.5, now + i*0.1 + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i*0.1 + 0.5);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + i*0.1);
+            osc.stop(now + i*0.1 + 0.5);
+        });
+        
+        // Tambahan Confetti Sound (Noise burst)
+        const bufferSize = audioCtx.sampleRate * 2; // set the time of the note
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        const noiseGain = audioCtx.createGain();
+        noiseGain.gain.setValueAtTime(0.1, now + 0.4);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+        noise.connect(noiseGain);
+        noiseGain.connect(audioCtx.destination);
+        noise.start(now + 0.4);
+    }
+
+
+    // --- VISUAL SETUP ---
+    const canvas = document.getElementById("wheelCanvas");
+    const ctx = canvas.getContext("2d");
+    const spinBtn = document.getElementById("spinBtn");
+    
+    let startAngle = 0;
+    const arc = Math.PI / (names.length / 2);
+    
+    const outsideRadius = 240;
+    const insideRadius = 50;
+
+    function drawRouletteWheel() {
+        ctx.clearRect(0,0,500,500);
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 13px Helvetica, Arial'; 
+
+        for(let i = 0; i < names.length; i++) {
+            const angle = startAngle + i * arc;
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.beginPath();
+            ctx.arc(250, 250, outsideRadius, angle, angle + arc, false);
+            ctx.arc(250, 250, insideRadius, angle + arc, angle, true);
+            ctx.stroke();
+            ctx.fill();
+
+            ctx.save();
+            ctx.translate(250, 250);
+            ctx.rotate(angle + arc / 2);
+            ctx.textAlign = "right"; 
+            ctx.fillStyle = "#333";
+            ctx.fillText(names[i], outsideRadius - 15, 5);
+            ctx.restore();
+        }
+    }
+
+    let lastTickAngle = -1; // Untuk melacak kapan harus bunyi "tik"
+
+    function spin() {
+        spinBtn.disabled = true;
+        spinBtn.innerText = "Sedang Memutar...";
+        
+        const winnerIndex = names.indexOf(FORCED_WINNER);
+        if (winnerIndex === -1) { alert("Nama pemenang error!"); return; }
+
+        const sliceDegrees = 360 / names.length;
+        const fullSpins = 20 + Math.floor(Math.random() * 5); 
+        const targetAngle = 270 - (winnerIndex * sliceDegrees) - (sliceDegrees / 2);
+        const finalDegree = (360 * fullSpins) + targetAngle;
+        const finalRadian = finalDegree * (Math.PI / 180);
+
+        animateRotate(startAngle, finalRadian);
+    }
+
+    function animateRotate(fromAngle, toAngle) {
+        const startTime = performance.now();
+        const duration = 20000; // 20 Detik
+
+        function animate(currentTime) {
+            const elapsed = currentTime - startTime;
+            
+            if (elapsed < duration) {
+                const t = elapsed / duration;
+                const easeOut = 1 - Math.pow(1 - t, 4); 
+                const currentPos = fromAngle + (toAngle - fromAngle) * easeOut;
+                
+                // Logic Suara "TIK"
+                // Bunyi setiap kali sudut melewati batas irisan (arc)
+                const currentSliceIndex = Math.floor((currentPos / arc));
+                if (currentSliceIndex !== lastTickAngle) {
+                    playTickSound(); // Bunyi TIK!
+                    lastTickAngle = currentSliceIndex;
+                }
+
+                startAngle = currentPos % (2 * Math.PI);
+                drawRouletteWheel();
+                requestAnimationFrame(animate);
+            } else {
+                startAngle = toAngle % (2 * Math.PI);
+                drawRouletteWheel();
+                showResult();
+            }
+        }
+        requestAnimationFrame(animate);
+    }
+
+    function showResult() {
+        document.getElementById("winnerName").innerText = FORCED_WINNER;
+        document.getElementById("overlay").style.display = "block";
+        document.getElementById("resultModal").classList.add("show");
+        
+        spinBtn.innerText = "PUTAR";
+
+        // 1. Play Suara Menang
+        playWinSound();
+
+        // 2. Efek Confetti (Bintang & Kertas)
+        fireCelebration();
+    }
+
+    // Fungsi Confetti Spesial
+    function fireCelebration() {
+        var duration = 3000; // Durasi confetti 3 detik
+        var end = Date.now() + duration;
+
+        (function frame() {
+            // Peluncuran Kiri
+            confetti({
+                particleCount: 5,
+                angle: 60,
+                spread: 55,
+                origin: { x: 0 },
+                colors: ['#d81b60', '#fce4ec', '#FFD700'], // Pink & Emas
+                shapes: ['circle', 'square', 'star'] // Ada Bintang
+            });
+            
+            // Peluncuran Kanan
+            confetti({
+                particleCount: 5,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1 },
+                colors: ['#d81b60', '#fce4ec', '#FFD700'],
+                shapes: ['circle', 'square', 'star']
+            });
+
+            if (Date.now() < end) {
+                requestAnimationFrame(frame);
+            }
+        }());
+    }
+
+    function closeModal() {
+        document.getElementById("overlay").style.display = "none";
+        document.getElementById("resultModal").classList.remove("show");
+        spinBtn.disabled = false;
+    }
+
+    drawRouletteWheel();
+
+</script>
+</body>
+</html>
