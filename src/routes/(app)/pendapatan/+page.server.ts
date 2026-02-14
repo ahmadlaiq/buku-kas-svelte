@@ -3,32 +3,53 @@ import type { Actions, PageServerLoad } from './$types';
 import prisma from '$lib/server/prisma';
 
 export const load: PageServerLoad = async ({ url }) => {
-  const month = url.searchParams.get('month') || new Date().toISOString().slice(0, 7);
-  const startOfMonth = new Date(`${month}-01T00:00:00Z`);
-  const endOfMonth = new Date(startOfMonth);
-  endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+  // Get filter parameters
+  const startDate = url.searchParams.get('startDate');
+  const endDate = url.searchParams.get('endDate');
+  const kategori = url.searchParams.get('kategori');
   
-  const data = await prisma.pendapatan.findMany({
-    where: {
-      tanggal: {
-        gte: startOfMonth,
-        lt: endOfMonth
-      }
-    },
-    orderBy: [
-      { tanggal: 'desc' },
-      { created_at: 'desc' }
-    ]
-  });
+  // Build where clause
+  const where: any = {};
+  
+  // Date range filter
+  if (startDate || endDate) {
+    where.tanggal = {};
+    if (startDate) {
+      where.tanggal.gte = new Date(startDate + 'T00:00:00Z');
+    }
+    if (endDate) {
+      const endDateTime = new Date(endDate + 'T00:00:00Z');
+      endDateTime.setDate(endDateTime.getDate() + 1); // Include the end date
+      where.tanggal.lt = endDateTime;
+    }
+  }
+  
+  // Category filter
+  if (kategori && kategori !== 'all') {
+    where.kategori = kategori;
+  }
+  
+  // Pagination
+  const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
+  const limit = 25;
+  const skip = (page - 1) * limit;
+
+  const [data, totalCount] = await Promise.all([
+    prisma.pendapatan.findMany({
+      where,
+      orderBy: [
+        { tanggal: 'desc' },
+        { created_at: 'desc' }
+      ],
+      take: limit,
+      skip
+    }),
+    prisma.pendapatan.count({ where })
+  ]);
 
   const totalResult = await prisma.pendapatan.aggregate({
     _sum: { jumlah: true },
-    where: {
-      tanggal: {
-        gte: startOfMonth,
-        lt: endOfMonth
-      }
-    }
+    where
   });
 
   return {
@@ -37,7 +58,17 @@ export const load: PageServerLoad = async ({ url }) => {
       tanggal: p.tanggal.toISOString().split('T')[0]
     })),
     total: totalResult._sum.jumlah || 0,
-    selectedMonth: month
+    filters: {
+      startDate: startDate || '',
+      endDate: endDate || '',
+      kategori: kategori || 'all'
+    },
+    pagination: {
+      page,
+      limit,
+      totalItems: totalCount,
+      totalPages: Math.ceil(totalCount / limit)
+    }
   };
 };
 

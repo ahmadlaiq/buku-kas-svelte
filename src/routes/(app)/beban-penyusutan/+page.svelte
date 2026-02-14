@@ -2,6 +2,7 @@
   import type { PageData, ActionData } from "./$types";
   import { enhance } from "$app/forms";
   import { invalidateAll } from "$app/navigation";
+  import { formatNumber, parseFormattedNumber } from "$lib/utils/numberFormat";
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -12,6 +13,7 @@
     nilai_aset: "",
     umur_ekonomis: "",
   });
+  let displayNilaiAset = $state("");
 
   let nilaiPenyusutan = $derived(() => {
     const nilai = parseFloat(formData.nilai_aset);
@@ -45,7 +47,15 @@
       nilai_aset: "",
       umur_ekonomis: "",
     };
+    displayNilaiAset = "";
     showModal = true;
+  }
+
+  function handleNilaiAsetInput(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const formatted = formatNumber(input.value);
+    displayNilaiAset = formatted;
+    formData.nilai_aset = parseFormattedNumber(formatted);
   }
 
   function filterByMonth(month: string) {
@@ -232,16 +242,16 @@
         <div class="form-group">
           <label for="nilai_aset" class="form-label">Nilai Aset (Rp)</label>
           <input
-            id="nilai_aset"
-            name="nilai_aset"
-            type="number"
+            id="nilai_aset-display"
+            type="text"
+            inputmode="numeric"
             class="form-input"
-            bind:value={formData.nilai_aset}
-            min="0"
-            step="10000"
-            placeholder="Harga pembelian aset"
+            value={displayNilaiAset}
+            oninput={handleNilaiAsetInput}
+            placeholder="10.000"
             required
           />
+          <input type="hidden" name="nilai_aset" value={formData.nilai_aset} />
         </div>
 
         <div class="form-group">

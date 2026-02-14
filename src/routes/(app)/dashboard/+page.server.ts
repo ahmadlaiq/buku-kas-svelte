@@ -1,9 +1,11 @@
 import type { PageServerLoad } from './$types';
 import prisma from '$lib/server/prisma';
 
-export const load: PageServerLoad = async () => {
-  // Get current month data
-  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+export const load: PageServerLoad = async ({ url }) => {
+  // Get month from query param or default to Dec 2025 (where seed data is)
+  // In a real app, you might default to new Date().toISOString().slice(0, 7);
+  const currentMonth = url.searchParams.get('month') || '2025-12';
+  
   const startOfMonth = new Date(`${currentMonth}-01T00:00:00Z`);
   const endOfMonth = new Date(startOfMonth);
   endOfMonth.setMonth(endOfMonth.getMonth() + 1);

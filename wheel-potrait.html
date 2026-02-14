@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salon Lucky Draw - Irna</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #fce4ec;
+            /* Gradien agar lebih terlihat seperti UI modern */
+            background: linear-gradient(180deg, #fce4ec 0%, #f8bbd0 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between; /* Menyebar elemen secara vertikal */
+            height: 100vh;
+            margin: 0;
+            padding: 40px 20px; /* Ruang aman atas-bawah */
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .header-section {
+            text-align: center;
+        }
+
+        h1 {
+            color: #880e4f;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-size: 2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        p {
+            color: #ad1457;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        .wheel-container {
+            position: relative;
+            /* Ukuran roda dinamis menyesuaikan lebar layar (max 380px) */
+            width: min(85vw, 380px);
+            height: min(85vw, 380px);
+            box-shadow: 0 15px 35px rgba(136, 14, 79, 0.2);
+            border-radius: 50%;
+            background: #fff;
+            border: 8px solid #fff;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+        }
+
+        .pointer {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 50px;
+            background: #d81b60;
+            clip-path: polygon(50% 100%, 0 0, 100% 0);
+            z-index: 10;
+            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.2));
+        }
+
+        .action-section {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding-bottom: 20px;
+        }
+
+        button {
+            width: 80%;
+            max-width: 300px;
+            padding: 18px;
+            font-size: 1.4rem;
+            background: linear-gradient(45deg, #ec407a, #d81b60);
+            color: white;
+            border: none;
+            border-radius: 100px;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(216, 27, 96, 0.4);
+            transition: all 0.2s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        button:disabled {
+            background: #ce93d8;
+            box-shadow: none;
+        }
+
+        /* Modal Resposive */
+        .result-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: white;
+            padding: 30px 20px;
+            border-radius: 25px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            text-align: center;
+            z-index: 100;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 85%;
+            max-width: 340px;
+        }
+
+        .result-modal.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(136, 14, 79, 0.4);
+            display: none;
+            z-index: 90;
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-section">
+        <h1>Salon Irna</h1>
+        <p>Edisi Spesial Lucky Draw</p>
+    </div>
+
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        <canvas id="wheelCanvas" width="500" height="500"></canvas>
+    </div>
+
+    <div class="action-section">
+        <button id="spinBtn" onclick="spin()">PUTAR SEKARANG</button>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="result-modal" id="resultModal">
+        <h3 style="color:#880e4f; margin:0; font-size: 1rem;">SELAMAT KEPADA:</h3>
+        <h1 id="winnerName" style="font-size: 2.8rem; color: #d81b60; margin: 10px 0; font-weight: 800;">...</h1>
+        
+        <div style="background-color: #fff0f5; border: 2px dashed #d81b60; border-radius: 15px; padding: 15px; margin-top: 10px;">
+            <div style="font-size: 0.8rem; color: #ad1457; margin-bottom: 5px; font-weight: bold;">✨ HADIAH ✨</div>
+            <div style="font-size: 1.1rem; font-weight: bold; color: #d81b60;">
+                🎁 Free 10 Pcs 🎁<br>
+                <span style="font-size: 0.9rem; font-weight: normal; color: #880e4f;">Travel Size Hair Mask</span>
+            </div>
+        </div>
+
+        <button onclick="closeModal()" style="margin-top:20px; padding: 12px; font-size: 1rem; width: 100%;">Klaim Hadiah</button>
+    </div>
+
+<script>
+    // Konfigurasi tetap sama
+    const names = [
+        "Adinda", "Andin", "Anisah", "Diah", "Eni", "Ika", 
+        "Imelda", "Imelda Karla", "Indah", "Ira", "Liana", "Mei", 
+        "Mela", "Nana", "Nita", "Safira", "Sasa", "Shella", 
+        "Sinta", "Sumarni", "Tia", "Tyas", "Winda", "Yuliana", 
+        "Yuni", "Yusna"
+    ];
+
+    const FORCED_WINNER = "Indah"; 
+    const colors = ["#F8BBD0", "#F48FB1", "#CE93D8", "#B39DDB", "#90CAF9", "#80DEEA", "#80CBC4", "#A5D6A7"];
+    
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playTickSound() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    function playWinSound() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((note, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = note;
+            gain.gain.setValueAtTime(0, now + i*0.1);
+            gain.gain.linearRampToValueAtTime(0.4, now + i*0.1 + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i*0.1 + 0.5);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + i*0.1);
+            osc.stop(now + i*0.1 + 0.5);
+        });
+    }
+
+    const canvas = document.getElementById("wheelCanvas");
+    const ctx = canvas.getContext("2d");
+    const spinBtn = document.getElementById("spinBtn");
+    
+    let startAngle = 0;
+    const arc = Math.PI / (names.length / 2);
+    const outsideRadius = 240;
+    const insideRadius = 40;
+
+    function drawRouletteWheel() {
+        ctx.clearRect(0,0,500,500);
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 14px Helvetica, Arial'; 
+
+        for(let i = 0; i < names.length; i++) {
+            const angle = startAngle + i * arc;
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.beginPath();
+            ctx.arc(250, 250, outsideRadius, angle, angle + arc, false);
+            ctx.arc(250, 250, insideRadius, angle + arc, angle, true);
+            ctx.stroke();
+            ctx.fill();
+
+            ctx.save();
+            ctx.translate(250, 250);
+            ctx.rotate(angle + arc / 2);
+            ctx.textAlign = "right"; 
+            ctx.fillStyle = "#444";
+            ctx.fillText(names[i], outsideRadius - 15, 5);
+            ctx.restore();
+        }
+    }
+
+    let lastTickAngle = -1;
+
+    function spin() {
+        spinBtn.disabled = true;
+        spinBtn.innerText = "MEMUTAR...";
+        
+        const winnerIndex = names.indexOf(FORCED_WINNER);
+        const sliceDegrees = 360 / names.length;
+        const fullSpins = 10 + Math.floor(Math.random() * 5); 
+        const targetAngle = 270 - (winnerIndex * sliceDegrees) - (sliceDegrees / 2);
+        const finalDegree = (360 * fullSpins) + targetAngle;
+        const finalRadian = finalDegree * (Math.PI / 180);
+
+        animateRotate(startAngle, finalRadian);
+    }
+
+    function animateRotate(fromAngle, toAngle) {
+        const startTime = performance.now();
+        const duration = 6000; // Lebih cepat (6 detik) untuk user experience mobile
+
+        function animate(currentTime) {
+            const elapsed = currentTime - startTime;
+            if (elapsed < duration) {
+                const t = elapsed / duration;
+                const easeOut = 1 - Math.pow(1 - t, 4); 
+                const currentPos = fromAngle + (toAngle - fromAngle) * easeOut;
+                
+                const currentSliceIndex = Math.floor((currentPos / arc));
+                if (currentSliceIndex !== lastTickAngle) {
+                    playTickSound();
+                    lastTickAngle = currentSliceIndex;
+                }
+
+                startAngle = currentPos % (2 * Math.PI);
+                drawRouletteWheel();
+                requestAnimationFrame(animate);
+            } else {
+                startAngle = toAngle % (2 * Math.PI);
+                drawRouletteWheel();
+                showResult();
+            }
+        }
+        requestAnimationFrame(animate);
+    }
+
+    function showResult() {
+        document.getElementById("winnerName").innerText = FORCED_WINNER;
+        document.getElementById("overlay").style.display = "block";
+        document.getElementById("resultModal").classList.add("show");
+        spinBtn.innerText = "PUTAR SEKARANG";
+        playWinSound();
+        fireCelebration();
+    }
+
+    function fireCelebration() {
+        var duration = 4000;
+        var end = Date.now() + duration;
+        (function frame() {
+            confetti({
+                particleCount: 4,
+                angle: 60,
+                spread: 55,
+                origin: { x: 0, y: 0.7 },
+                colors: ['#d81b60', '#FFD700']
+            });
+            confetti({
+                particleCount: 4,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1, y: 0.7 },
+                colors: ['#d81b60', '#FFD700']
+            });
+            if (Date.now() < end) requestAnimationFrame(frame);
+        }());
+    }
+
+    function closeModal() {
+        document.getElementById("overlay").style.display = "none";
+        document.getElementById("resultModal").classList.remove("show");
+        spinBtn.disabled = false;
+    }
+
+    drawRouletteWheel();
+</script>
+</body>
+</html>

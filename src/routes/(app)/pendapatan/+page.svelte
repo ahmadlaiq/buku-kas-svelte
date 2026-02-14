@@ -2,6 +2,7 @@
   import type { PageData, ActionData } from "./$types";
   import { enhance } from "$app/forms";
   import { invalidateAll } from "$app/navigation";
+  import { formatNumber, parseFormattedNumber } from "$lib/utils/numberFormat";
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -12,16 +13,9 @@
     deskripsi: "",
     jumlah: "",
   });
+  let displayJumlah = $state("");
 
-  const kategoriOptions = [
-    "Perawatan Rambut",
-    "Perawatan Wajah",
-    "Perawatan Kuku",
-    "Spa & Massage",
-    "Make Up",
-    "Penjualan Produk",
-    "Lainnya",
-  ];
+  const kategoriOptions = ["Hair Treatment", "Nail Art", "Product"];
 
   function formatCurrency(amount: number) {
     return new Intl.NumberFormat("id-ID", {
@@ -46,13 +40,37 @@
       deskripsi: "",
       jumlah: "",
     };
+    displayJumlah = "";
     showModal = true;
   }
 
-  function filterByMonth(month: string) {
-    const searchParams = new URLSearchParams({ month });
+  function handleJumlahInput(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const formatted = formatNumber(input.value);
+    displayJumlah = formatted;
+    formData.jumlah = parseFormattedNumber(formatted);
+  }
+
+  function applyFilters() {
+    const searchParams = new URLSearchParams();
+
+    if (filterStartDate) searchParams.set("startDate", filterStartDate);
+    if (filterEndDate) searchParams.set("endDate", filterEndDate);
+    if (filterKategori && filterKategori !== "all")
+      searchParams.set("kategori", filterKategori);
+
     window.location.href = `/pendapatan?${searchParams.toString()}`;
   }
+
+  function changePage(newPage: number) {
+    const searchParams = new URL(window.location.href).searchParams;
+    searchParams.set("page", newPage.toString());
+    window.location.href = `/pendapatan?${searchParams.toString()}`;
+  }
+
+  let filterStartDate = $state(data.filters.startDate);
+  let filterEndDate = $state(data.filters.endDate);
+  let filterKategori = $state(data.filters.kategori);
 </script>
 
 <svelte:head>
@@ -72,18 +90,33 @@
 
   <!-- Filter & Stats -->
   <div class="card mb-lg">
-    <div class="flex justify-between items-center">
-      <div>
-        <label class="form-label">Filter Bulan:</label>
-        <input
-          type="month"
-          class="form-input"
-          style="width: auto; display: inline-block;"
-          value={data.selectedMonth}
-          onchange={(e) => filterByMonth(e.currentTarget.value)}
-        />
+    <div
+      class="flex"
+      style="gap: var(--space-md); align-items: flex-end; flex-wrap: wrap;"
+    >
+      <div style="flex: 1; min-width: 150px;">
+        <label class="form-label">Tanggal Mulai:</label>
+        <input type="date" class="form-input" bind:value={filterStartDate} />
       </div>
-      <div class="stat-card" style="margin: 0; flex: 1; max-width: 300px;">
+      <div style="flex: 1; min-width: 150px;">
+        <label class="form-label">Tanggal Sampai:</label>
+        <input type="date" class="form-input" bind:value={filterEndDate} />
+      </div>
+      <div style="flex: 1; min-width: 150px;">
+        <label class="form-label">Kategori:</label>
+        <select class="form-select" bind:value={filterKategori}>
+          <option value="all">Semua Kategori</option>
+          {#each kategoriOptions as kategori}
+            <option value={kategori}>{kategori}</option>
+          {/each}
+        </select>
+      </div>
+      <div>
+        <button onclick={applyFilters} class="btn btn-primary">
+          🔍 Filter
+        </button>
+      </div>
+      <div class="stat-card" style="margin: 0; flex: 1; min-width: 250px;">
         <div class="stat-label">Total Pendapatan</div>
         <div class="stat-value text-success">{formatCurrency(data.total)}</div>
       </div>
@@ -169,6 +202,42 @@
       </p>
     {/if}
   </div>
+
+  <!-- Pagination -->
+  {#if data.pagination && data.pagination.totalPages > 1}
+    <div class="pagination-container">
+      <div class="pagination-info">
+        Menampilkan {Math.min(
+          (data.pagination.page - 1) * data.pagination.limit + 1,
+          data.pagination.totalItems,
+        )} -
+        {Math.min(
+          data.pagination.page * data.pagination.limit,
+          data.pagination.totalItems,
+        )}
+        dari {data.pagination.totalItems} data
+      </div>
+      <div class="pagination-controls">
+        <button
+          class="btn btn-secondary btn-sm"
+          disabled={data.pagination.page <= 1}
+          onclick={() => changePage(data.pagination.page - 1)}
+        >
+          ⬅️ Sebelumnya
+        </button>
+        <span class="pagination-page">
+          Halaman {data.pagination.page} / {data.pagination.totalPages}
+        </span>
+        <button
+          class="btn btn-secondary btn-sm"
+          disabled={data.pagination.page >= data.pagination.totalPages}
+          onclick={() => changePage(data.pagination.page + 1)}
+        >
+          Selanjutnya ➡️
+        </button>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <!-- Modal -->
@@ -237,15 +306,16 @@
         <div class="form-group">
           <label for="jumlah" class="form-label">Jumlah (Rp)</label>
           <input
-            id="jumlah"
-            name="jumlah"
-            type="number"
+            id="jumlah-display"
+            type="text"
+            inputmode="numeric"
             class="form-input"
-            bind:value={formData.jumlah}
-            min="0"
-            step="1000"
+            value={displayJumlah}
+            oninput={handleJumlahInput}
+            placeholder="10.000"
             required
           />
+          <input type="hidden" name="jumlah" value={formData.jumlah} />
         </div>
 
         <div class="flex gap-md">
@@ -267,6 +337,31 @@
 {/if}
 
 <style>
+  .pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--space-lg);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--neutral-200);
+  }
+
+  .pagination-info {
+    color: var(--neutral-600);
+    font-size: 0.9rem;
+  }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+  }
+
+  .pagination-page {
+    font-weight: 500;
+    color: var(--neutral-700);
+  }
+
   .modal-overlay {
     position: fixed;
     top: 0;

@@ -2,6 +2,7 @@
   import type { PageData, ActionData } from "./$types";
   import { enhance } from "$app/forms";
   import { invalidateAll } from "$app/navigation";
+  import { formatNumber, parseFormattedNumber } from "$lib/utils/numberFormat";
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -12,6 +13,7 @@
     deskripsi: "",
     jumlah: "",
   });
+  let displayJumlah = $state("");
 
   const kategoriOptions = [
     "Pembelian Produk",
@@ -46,7 +48,15 @@
       deskripsi: "",
       jumlah: "",
     };
+    displayJumlah = "";
     showModal = true;
+  }
+
+  function handleJumlahInput(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const formatted = formatNumber(input.value);
+    displayJumlah = formatted;
+    formData.jumlah = parseFormattedNumber(formatted);
   }
 
   function filterByMonth(month: string) {
@@ -233,15 +243,16 @@
         <div class="form-group">
           <label for="jumlah" class="form-label">Jumlah (Rp)</label>
           <input
-            id="jumlah"
-            name="jumlah"
-            type="number"
+            id="jumlah-display"
+            type="text"
+            inputmode="numeric"
             class="form-input"
-            bind:value={formData.jumlah}
-            min="0"
-            step="1000"
+            value={displayJumlah}
+            oninput={handleJumlahInput}
+            placeholder="10.000"
             required
           />
+          <input type="hidden" name="jumlah" value={formData.jumlah} />
         </div>
 
         <div class="flex gap-md">
