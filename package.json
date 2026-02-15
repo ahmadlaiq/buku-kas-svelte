@@ -30,7 +30,8 @@
 		"@prisma/client": "5.22.0",
 		"bcryptjs": "^3.0.3",
 		"pg": "^8.18.0",
-		"prisma": "5.22.0"
+		"prisma": "5.22.0",
+		"vite-plugin-node-polyfills": "^0.22.0"
 	},
 	"prisma": {
 		"seed": "node prisma/seed.js"
