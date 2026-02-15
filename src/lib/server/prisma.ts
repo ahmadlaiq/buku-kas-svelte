@@ -3,7 +3,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 import { DATABASE_URL } from '$env/static/private';
 
-const { Pool } = pg;
+const Pool = pg.Pool || (pg as any).default?.Pool || (pg as any).Pool;
 
 const connectionString = `${DATABASE_URL}`;
 
