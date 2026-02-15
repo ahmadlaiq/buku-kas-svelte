@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import prisma from '$lib/server/prisma';
+import { prisma } from '$lib/server/prisma';
 
 export const load: PageServerLoad = async ({ url }) => {
   const month = url.searchParams.get('month') || new Date().toISOString().slice(0, 7);

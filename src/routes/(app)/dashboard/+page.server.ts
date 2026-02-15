@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types';
-import prisma from '$lib/server/prisma';
+import { prisma } from '$lib/server/prisma';
 
 export const load: PageServerLoad = async ({ url }) => {
   // Get month from query param or default to Dec 2025 (where seed data is)

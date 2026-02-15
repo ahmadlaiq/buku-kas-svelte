@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import prisma from '$lib/server/prisma';
+import { prisma } from '$lib/server/prisma';
 import { compareSync } from 'bcryptjs';
 
 export const POST: RequestHandler = async ({ request }) => {
