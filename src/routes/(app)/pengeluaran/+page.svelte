@@ -63,6 +63,22 @@
     const searchParams = new URLSearchParams({ month });
     window.location.href = `/pengeluaran?${searchParams.toString()}`;
   }
+
+  function handleSort(column: string) {
+    const searchParams = new URL(window.location.href).searchParams;
+    const currentSortBy = searchParams.get("sortBy") || "tanggal";
+    let currentSortOrder = searchParams.get("sortOrder") || "desc";
+
+    if (currentSortBy === column) {
+      currentSortOrder = currentSortOrder === "asc" ? "desc" : "asc";
+    } else {
+      currentSortOrder = "asc";
+    }
+
+    searchParams.set("sortBy", column);
+    searchParams.set("sortOrder", currentSortOrder);
+    window.location.href = `/pengeluaran?${searchParams.toString()}`;
+  }
 </script>
 
 <svelte:head>
@@ -122,10 +138,38 @@
           <thead>
             <tr>
               <th>No</th>
-              <th>Tanggal</th>
-              <th>Kategori</th>
-              <th>Deskripsi</th>
-              <th style="text-align: right;">Jumlah</th>
+              <th onclick={() => handleSort('tanggal')} style="cursor: pointer; user-select: none;">
+                Tanggal
+                {#if data.sortBy === 'tanggal'}
+                  {data.sortOrder === 'asc' ? '↑' : '↓'}
+                {:else}
+                  <span style="opacity: 0.3">↕</span>
+                {/if}
+              </th>
+              <th onclick={() => handleSort('kategori')} style="cursor: pointer; user-select: none;">
+                Kategori
+                {#if data.sortBy === 'kategori'}
+                  {data.sortOrder === 'asc' ? '↑' : '↓'}
+                {:else}
+                  <span style="opacity: 0.3">↕</span>
+                {/if}
+              </th>
+              <th onclick={() => handleSort('deskripsi')} style="cursor: pointer; user-select: none;">
+                Deskripsi
+                {#if data.sortBy === 'deskripsi'}
+                  {data.sortOrder === 'asc' ? '↑' : '↓'}
+                {:else}
+                  <span style="opacity: 0.3">↕</span>
+                {/if}
+              </th>
+              <th onclick={() => handleSort('jumlah')} style="text-align: right; cursor: pointer; user-select: none;">
+                Jumlah
+                {#if data.sortBy === 'jumlah'}
+                  {data.sortOrder === 'asc' ? '↑' : '↓'}
+                {:else}
+                  <span style="opacity: 0.3">↕</span>
+                {/if}
+              </th>
               <th style="text-align: center;">Aksi</th>
             </tr>
           </thead>

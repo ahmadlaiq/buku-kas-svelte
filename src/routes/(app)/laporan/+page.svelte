@@ -19,6 +19,50 @@
   function handlePrint() {
     window.print();
   }
+
+  // Sorting states for each section
+  let sortConfig = $state({
+    pendapatan: { key: "total", order: "desc" },
+    pengeluaran: { key: "total", order: "desc" },
+    bebanOperasional: { key: "total", order: "desc" },
+    bebanPenyusutan: { key: "total", order: "desc" },
+  });
+
+  function toggleSort(section: keyof typeof sortConfig, key: string) {
+    const current = sortConfig[section];
+    if (current.key === key) {
+      current.order = current.order === "asc" ? "desc" : "asc";
+    } else {
+      sortConfig[section] = { key, order: "desc" };
+    }
+  }
+
+  function sortItems(items: any[], config: { key: string; order: string }) {
+    return [...items].sort((a, b) => {
+      const valA = a[config.key];
+      const valB = b[config.key];
+      let compare = 0;
+      if (typeof valA === "string") {
+        compare = valA.localeCompare(valB);
+      } else {
+        compare = valA - valB;
+      }
+      return config.order === "asc" ? compare : -compare;
+    });
+  }
+
+  let sortedPendapatan = $derived(
+    sortItems(data.pendapatan, sortConfig.pendapatan)
+  );
+  let sortedPengeluaran = $derived(
+    sortItems(data.pengeluaran, sortConfig.pengeluaran)
+  );
+  let sortedBebanOperasional = $derived(
+    sortItems(data.bebanOperasional, sortConfig.bebanOperasional)
+  );
+  let sortedBebanPenyusutan = $derived(
+    sortItems(data.bebanPenyusutan, sortConfig.bebanPenyusutan)
+  );
 </script>
 
 <svelte:head>
@@ -63,8 +107,28 @@
       <section class="report-section">
         <h4 class="section-title">PENDAPATAN</h4>
         <table class="report-table">
+          <thead>
+            <tr>
+              <th class="header-name" onclick={() => toggleSort("pendapatan", "kategori")}>
+                Kategori
+                {#if sortConfig.pendapatan.key === "kategori"}
+                  <span class="no-print">{sortConfig.pendapatan.order === "asc" ? "↑" : "↓"}</span>
+                {:else}
+                  <span class="no-print" style="opacity: 0.3">↕</span>
+                {/if}
+              </th>
+              <th class="header-value" onclick={() => toggleSort("pendapatan", "total")}>
+                Total
+                {#if sortConfig.pendapatan.key === "total"}
+                  <span class="no-print">{sortConfig.pendapatan.order === "asc" ? "↑" : "↓"}</span>
+                {:else}
+                  <span class="no-print" style="opacity: 0.3">↕</span>
+                {/if}
+              </th>
+            </tr>
+          </thead>
           <tbody>
-            {#each data.pendapatan as item}
+            {#each sortedPendapatan as item}
               <tr>
                 <td class="item-name">{item.kategori}</td>
                 <td class="item-value">{formatCurrency(item.total)}</td>
@@ -84,8 +148,28 @@
       <section class="report-section">
         <h4 class="section-title">PENGELUARAN LANGSUNG</h4>
         <table class="report-table">
+          <thead>
+            <tr>
+              <th class="header-name" onclick={() => toggleSort("pengeluaran", "kategori")}>
+                Kategori
+                {#if sortConfig.pengeluaran.key === "kategori"}
+                  <span class="no-print">{sortConfig.pengeluaran.order === "asc" ? "↑" : "↓"}</span>
+                {:else}
+                  <span class="no-print" style="opacity: 0.3">↕</span>
+                {/if}
+              </th>
+              <th class="header-value" onclick={() => toggleSort("pengeluaran", "total")}>
+                Total
+                {#if sortConfig.pengeluaran.key === "total"}
+                  <span class="no-print">{sortConfig.pengeluaran.order === "asc" ? "↑" : "↓"}</span>
+                {:else}
+                  <span class="no-print" style="opacity: 0.3">↕</span>
+                {/if}
+              </th>
+            </tr>
+          </thead>
           <tbody>
-            {#each data.pengeluaran as item}
+            {#each sortedPengeluaran as item}
               <tr>
                 <td class="item-name">{item.kategori}</td>
                 <td class="item-value">{formatCurrency(item.total)}</td>
@@ -123,8 +207,28 @@
       <section class="report-section">
         <h4 class="section-title">BEBAN OPERASIONAL</h4>
         <table class="report-table">
+          <thead>
+            <tr>
+              <th class="header-name" onclick={() => toggleSort("bebanOperasional", "kategori")}>
+                Kategori
+                {#if sortConfig.bebanOperasional.key === "kategori"}
+                  <span class="no-print">{sortConfig.bebanOperasional.order === "asc" ? "↑" : "↓"}</span>
+                {:else}
+                  <span class="no-print" style="opacity: 0.3">↕</span>
+                {/if}
+              </th>
+              <th class="header-value" onclick={() => toggleSort("bebanOperasional", "total")}>
+                Total
+                {#if sortConfig.bebanOperasional.key === "total"}
+                  <span class="no-print">{sortConfig.bebanOperasional.order === "asc" ? "↑" : "↓"}</span>
+                {:else}
+                  <span class="no-print" style="opacity: 0.3">↕</span>
+                {/if}
+              </th>
+            </tr>
+          </thead>
           <tbody>
-            {#each data.bebanOperasional as item}
+            {#each sortedBebanOperasional as item}
               <tr>
                 <td class="item-name">{item.kategori}</td>
                 <td class="item-value">{formatCurrency(item.total)}</td>
@@ -146,8 +250,28 @@
       <section class="report-section">
         <h4 class="section-title">BEBAN PENYUSUTAN</h4>
         <table class="report-table">
+          <thead>
+            <tr>
+              <th class="header-name" onclick={() => toggleSort("bebanPenyusutan", "kategori")}>
+                Kategori
+                {#if sortConfig.bebanPenyusutan.key === "kategori"}
+                  <span class="no-print">{sortConfig.bebanPenyusutan.order === "asc" ? "↑" : "↓"}</span>
+                {:else}
+                  <span class="no-print" style="opacity: 0.3">↕</span>
+                {/if}
+              </th>
+              <th class="header-value" onclick={() => toggleSort("bebanPenyusutan", "total")}>
+                Total
+                {#if sortConfig.bebanPenyusutan.key === "total"}
+                  <span class="no-print">{sortConfig.bebanPenyusutan.order === "asc" ? "↑" : "↓"}</span>
+                {:else}
+                  <span class="no-print" style="opacity: 0.3">↕</span>
+                {/if}
+              </th>
+            </tr>
+          </thead>
           <tbody>
-            {#each data.bebanPenyusutan as item}
+            {#each sortedBebanPenyusutan as item}
               <tr>
                 <td class="item-name">{item.kategori}</td>
                 <td class="item-value">{formatCurrency(item.total)}</td>
@@ -309,6 +433,26 @@
   .report-table {
     width: 100%;
     border-collapse: collapse;
+  }
+
+  .header-name, .header-value {
+    padding: var(--space-sm) var(--space-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--neutral-500);
+    text-transform: uppercase;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid var(--neutral-200);
+  }
+
+  .header-name {
+    text-align: left;
+    padding-left: var(--space-lg);
+  }
+
+  .header-value {
+    text-align: right;
   }
 
   .report-table tr {

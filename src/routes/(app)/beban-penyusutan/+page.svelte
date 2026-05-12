@@ -62,6 +62,22 @@
     const searchParams = new URLSearchParams({ month });
     window.location.href = `/beban-penyusutan?${searchParams.toString()}`;
   }
+
+  function handleSort(column: string) {
+    const searchParams = new URL(window.location.href).searchParams;
+    const currentSortBy = searchParams.get("sortBy") || "tanggal";
+    let currentSortOrder = searchParams.get("sortOrder") || "desc";
+
+    if (currentSortBy === column) {
+      currentSortOrder = currentSortOrder === "asc" ? "desc" : "asc";
+    } else {
+      currentSortOrder = "asc";
+    }
+
+    searchParams.set("sortBy", column);
+    searchParams.set("sortOrder", currentSortOrder);
+    window.location.href = `/beban-penyusutan?${searchParams.toString()}`;
+  }
 </script>
 
 <svelte:head>
@@ -127,11 +143,46 @@
           <thead>
             <tr>
               <th>No</th>
-              <th>Tanggal</th>
-              <th>Nama Aset</th>
-              <th style="text-align: right;">Nilai Aset</th>
-              <th style="text-align: center;">Umur (Tahun)</th>
-              <th style="text-align: right;">Penyusutan/Bulan</th>
+              <th onclick={() => handleSort('tanggal')} style="cursor: pointer; user-select: none;">
+                Tanggal
+                {#if data.sortBy === 'tanggal'}
+                  {data.sortOrder === 'asc' ? '↑' : '↓'}
+                {:else}
+                  <span style="opacity: 0.3">↕</span>
+                {/if}
+              </th>
+              <th onclick={() => handleSort('nama_aset')} style="cursor: pointer; user-select: none;">
+                Nama Aset
+                {#if data.sortBy === 'nama_aset'}
+                  {data.sortOrder === 'asc' ? '↑' : '↓'}
+                {:else}
+                  <span style="opacity: 0.3">↕</span>
+                {/if}
+              </th>
+              <th onclick={() => handleSort('nilai_aset')} style="text-align: right; cursor: pointer; user-select: none;">
+                Nilai Aset
+                {#if data.sortBy === 'nilai_aset'}
+                  {data.sortOrder === 'asc' ? '↑' : '↓'}
+                {:else}
+                  <span style="opacity: 0.3">↕</span>
+                {/if}
+              </th>
+              <th onclick={() => handleSort('umur_ekonomis')} style="text-align: center; cursor: pointer; user-select: none;">
+                Umur (Tahun)
+                {#if data.sortBy === 'umur_ekonomis'}
+                  {data.sortOrder === 'asc' ? '↑' : '↓'}
+                {:else}
+                  <span style="opacity: 0.3">↕</span>
+                {/if}
+              </th>
+              <th onclick={() => handleSort('nilai_penyusutan')} style="text-align: right; cursor: pointer; user-select: none;">
+                Penyusutan/Bulan
+                {#if data.sortBy === 'nilai_penyusutan'}
+                  {data.sortOrder === 'asc' ? '↑' : '↓'}
+                {:else}
+                  <span style="opacity: 0.3">↕</span>
+                {/if}
+              </th>
               <th style="text-align: center;">Aksi</th>
             </tr>
           </thead>

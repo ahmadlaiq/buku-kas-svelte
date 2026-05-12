@@ -29,6 +29,12 @@ export const load: PageServerLoad = async ({ url }) => {
     where.kategori = kategori;
   }
   
+  // Sorting
+  const sortBy = url.searchParams.get('sortBy') || 'tanggal';
+  const sortOrder = (url.searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
+  const allowedSortFields = ['tanggal', 'kategori', 'deskripsi', 'jumlah'];
+  const validatedSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'tanggal';
+  
   // Pagination
   const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
   const limit = 25;
@@ -38,7 +44,7 @@ export const load: PageServerLoad = async ({ url }) => {
     prisma.pendapatan.findMany({
       where,
       orderBy: [
-        { tanggal: 'desc' },
+        { [validatedSortBy]: sortOrder },
         { created_at: 'desc' }
       ],
       take: limit,
@@ -61,7 +67,9 @@ export const load: PageServerLoad = async ({ url }) => {
     filters: {
       startDate: startDate || '',
       endDate: endDate || '',
-      kategori: kategori || 'all'
+      kategori: kategori || 'all',
+      sortBy: validatedSortBy,
+      sortOrder: sortOrder
     },
     pagination: {
       page,

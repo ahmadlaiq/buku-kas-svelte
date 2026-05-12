@@ -8,6 +8,12 @@ export const load: PageServerLoad = async ({ url }) => {
   const endOfMonth = new Date(startOfMonth);
   endOfMonth.setMonth(endOfMonth.getMonth() + 1);
   
+  // Sorting
+  const sortBy = url.searchParams.get('sortBy') || 'tanggal';
+  const sortOrder = (url.searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
+  const allowedSortFields = ['tanggal', 'kategori', 'deskripsi', 'jumlah'];
+  const validatedSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'tanggal';
+
   const data = await prisma.bebanOperasional.findMany({
     where: {
       tanggal: {
@@ -16,7 +22,7 @@ export const load: PageServerLoad = async ({ url }) => {
       }
     },
     orderBy: [
-      { tanggal: 'desc' },
+      { [validatedSortBy]: sortOrder },
       { created_at: 'desc' }
     ]
   });
@@ -37,7 +43,9 @@ export const load: PageServerLoad = async ({ url }) => {
       tanggal: p.tanggal.toISOString().split('T')[0]
     })),
     total: totalResult._sum.jumlah || 0,
-    selectedMonth: month
+    selectedMonth: month,
+    sortBy: validatedSortBy,
+    sortOrder: sortOrder
   };
 };
 
