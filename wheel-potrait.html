@@ -158,9 +158,11 @@
         
         <div style="background-color: #fff0f5; border: 2px dashed #d81b60; border-radius: 15px; padding: 15px; margin-top: 10px;">
             <div style="font-size: 0.8rem; color: #ad1457; margin-bottom: 5px; font-weight: bold;">✨ HADIAH ✨</div>
-            <div style="font-size: 1.1rem; font-weight: bold; color: #d81b60;">
-                🎁 Free 10 Pcs 🎁<br>
-                <span style="font-size: 0.9rem; font-weight: normal; color: #880e4f;">Travel Size Hair Mask</span>
+            <div style="font-size: 1.15rem; font-weight: bold; color: #d81b60; line-height: 1.4;">
+                🎁 Free Cuci Catok atau Tebus Murah Creambath Cuma Bayar 25K 🎁
+            </div>
+            <div style="font-size: 0.85rem; color: #ad1457; margin-top: 8px; font-weight: bold;">
+                📅 Berlaku sampai tgl 13 Mei 📅
             </div>
         </div>
 
@@ -168,16 +170,14 @@
     </div>
 
 <script>
-    // Konfigurasi tetap sama
     const names = [
-        "Adinda", "Andin", "Anisah", "Diah", "Eni", "Ika", 
-        "Imelda", "Imelda Karla", "Indah", "Ira", "Liana", "Mei", 
-        "Mela", "Nana", "Nita", "Safira", "Sasa", "Shella", 
-        "Sinta", "Sumarni", "Tia", "Tyas", "Winda", "Yuliana", 
-        "Yuni", "Yusna"
+        "Jeny", "Putri Devi L.", "Evi", "Maya", "Niken", "Risma", 
+        "Sri Wahyuni", "Saima", "Sapta", "Indri", "Laya", "Nurul", 
+        "Aticha Nafa", "Ayu", "Ayusna", "Ifa", "Rezza", "Nanda", 
+        "Norma", "Nur Ningsih", "Anisah", "Devi Novita", "Adinda", "Yanti"
     ];
 
-    const FORCED_WINNER = "Indah"; 
+    let winningIndex = -1; 
     const colors = ["#F8BBD0", "#F48FB1", "#CE93D8", "#B39DDB", "#90CAF9", "#80DEEA", "#80CBC4", "#A5D6A7"];
     
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -229,7 +229,7 @@
         ctx.clearRect(0,0,500,500);
         ctx.strokeStyle = "white";
         ctx.lineWidth = 2;
-        ctx.font = 'bold 14px Helvetica, Arial'; 
+        ctx.font = 'bold 11px Helvetica, Arial'; 
 
         for(let i = 0; i < names.length; i++) {
             const angle = startAngle + i * arc;
@@ -256,10 +256,11 @@
         spinBtn.disabled = true;
         spinBtn.innerText = "MEMUTAR...";
         
-        const winnerIndex = names.indexOf(FORCED_WINNER);
+        winningIndex = names.indexOf("Evi"); 
+        if (winningIndex === -1) winningIndex = 0; 
         const sliceDegrees = 360 / names.length;
         const fullSpins = 10 + Math.floor(Math.random() * 5); 
-        const targetAngle = 270 - (winnerIndex * sliceDegrees) - (sliceDegrees / 2);
+        const targetAngle = 270 - (winningIndex * sliceDegrees) - (sliceDegrees / 2);
         const finalDegree = (360 * fullSpins) + targetAngle;
         const finalRadian = finalDegree * (Math.PI / 180);
 
@@ -296,7 +297,7 @@
     }
 
     function showResult() {
-        document.getElementById("winnerName").innerText = FORCED_WINNER;
+        document.getElementById("winnerName").innerText = names[winningIndex];
         document.getElementById("overlay").style.display = "block";
         document.getElementById("resultModal").classList.add("show");
         spinBtn.innerText = "PUTAR SEKARANG";

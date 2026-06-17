@@ -59,10 +59,26 @@
     formData.jumlah = parseFormattedNumber(formatted);
   }
 
-  function filterByMonth(month: string) {
-    const searchParams = new URLSearchParams({ month });
+  function applyFilters() {
+    const searchParams = new URLSearchParams();
+
+    if (filterStartDate) searchParams.set("startDate", filterStartDate);
+    if (filterEndDate) searchParams.set("endDate", filterEndDate);
+    if (filterKategori && filterKategori !== "all")
+      searchParams.set("kategori", filterKategori);
+
     window.location.href = `/pengeluaran?${searchParams.toString()}`;
   }
+
+  function changePage(newPage: number) {
+    const searchParams = new URL(window.location.href).searchParams;
+    searchParams.set("page", newPage.toString());
+    window.location.href = `/pengeluaran?${searchParams.toString()}`;
+  }
+
+  let filterStartDate = $state(data.filters.startDate);
+  let filterEndDate = $state(data.filters.endDate);
+  let filterKategori = $state(data.filters.kategori);
 
   function handleSort(column: string) {
     const searchParams = new URL(window.location.href).searchParams;
@@ -98,18 +114,33 @@
 
   <!-- Filter & Stats -->
   <div class="card mb-lg">
-    <div class="flex justify-between items-center">
-      <div>
-        <label class="form-label">Filter Bulan:</label>
-        <input
-          type="month"
-          class="form-input"
-          style="width: auto; display: inline-block;"
-          value={data.selectedMonth}
-          onchange={(e) => filterByMonth(e.currentTarget.value)}
-        />
+    <div
+      class="flex"
+      style="gap: var(--space-md); align-items: flex-end; flex-wrap: wrap;"
+    >
+      <div style="flex: 1; min-width: 150px;">
+        <label class="form-label">Tanggal Mulai:</label>
+        <input type="date" class="form-input" bind:value={filterStartDate} />
       </div>
-      <div class="stat-card" style="margin: 0; flex: 1; max-width: 300px;">
+      <div style="flex: 1; min-width: 150px;">
+        <label class="form-label">Tanggal Sampai:</label>
+        <input type="date" class="form-input" bind:value={filterEndDate} />
+      </div>
+      <div style="flex: 1; min-width: 150px;">
+        <label class="form-label">Kategori:</label>
+        <select class="form-select" bind:value={filterKategori}>
+          <option value="all">Semua Kategori</option>
+          {#each kategoriOptions as kategori}
+            <option value={kategori}>{kategori}</option>
+          {/each}
+        </select>
+      </div>
+      <div>
+        <button onclick={applyFilters} class="btn btn-primary">
+          🔍 Filter
+        </button>
+      </div>
+      <div class="stat-card" style="margin: 0; flex: 1; min-width: 250px;">
         <div class="stat-label">Total Pengeluaran</div>
         <div class="stat-value text-error">{formatCurrency(data.total)}</div>
       </div>
@@ -140,32 +171,32 @@
               <th>No</th>
               <th onclick={() => handleSort('tanggal')} style="cursor: pointer; user-select: none;">
                 Tanggal
-                {#if data.sortBy === 'tanggal'}
-                  {data.sortOrder === 'asc' ? '↑' : '↓'}
+                {#if data.filters.sortBy === 'tanggal'}
+                  {data.filters.sortOrder === 'asc' ? '↑' : '↓'}
                 {:else}
                   <span style="opacity: 0.3">↕</span>
                 {/if}
               </th>
               <th onclick={() => handleSort('kategori')} style="cursor: pointer; user-select: none;">
                 Kategori
-                {#if data.sortBy === 'kategori'}
-                  {data.sortOrder === 'asc' ? '↑' : '↓'}
+                {#if data.filters.sortBy === 'kategori'}
+                  {data.filters.sortOrder === 'asc' ? '↑' : '↓'}
                 {:else}
                   <span style="opacity: 0.3">↕</span>
                 {/if}
               </th>
               <th onclick={() => handleSort('deskripsi')} style="cursor: pointer; user-select: none;">
                 Deskripsi
-                {#if data.sortBy === 'deskripsi'}
-                  {data.sortOrder === 'asc' ? '↑' : '↓'}
+                {#if data.filters.sortBy === 'deskripsi'}
+                  {data.filters.sortOrder === 'asc' ? '↑' : '↓'}
                 {:else}
                   <span style="opacity: 0.3">↕</span>
                 {/if}
               </th>
               <th onclick={() => handleSort('jumlah')} style="text-align: right; cursor: pointer; user-select: none;">
                 Jumlah
-                {#if data.sortBy === 'jumlah'}
-                  {data.sortOrder === 'asc' ? '↑' : '↓'}
+                {#if data.filters.sortBy === 'jumlah'}
+                  {data.filters.sortOrder === 'asc' ? '↑' : '↓'}
                 {:else}
                   <span style="opacity: 0.3">↕</span>
                 {/if}
@@ -219,6 +250,42 @@
       </p>
     {/if}
   </div>
+
+  <!-- Pagination -->
+  {#if data.pagination && data.pagination.totalPages > 1}
+    <div class="pagination-container">
+      <div class="pagination-info">
+        Menampilkan {Math.min(
+          (data.pagination.page - 1) * data.pagination.limit + 1,
+          data.pagination.totalItems,
+        )} -
+        {Math.min(
+          data.pagination.page * data.pagination.limit,
+          data.pagination.totalItems,
+        )}
+        dari {data.pagination.totalItems} data
+      </div>
+      <div class="pagination-controls">
+        <button
+          class="btn btn-secondary btn-sm"
+          disabled={data.pagination.page <= 1}
+          onclick={() => changePage(data.pagination.page - 1)}
+        >
+          ⬅️ Sebelumnya
+        </button>
+        <span class="pagination-page">
+          Halaman {data.pagination.page} / {data.pagination.totalPages}
+        </span>
+        <button
+          class="btn btn-secondary btn-sm"
+          disabled={data.pagination.page >= data.pagination.totalPages}
+          onclick={() => changePage(data.pagination.page + 1)}
+        >
+          Selanjutnya ➡️
+        </button>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <!-- Modal -->
@@ -318,6 +385,31 @@
 {/if}
 
 <style>
+  .pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--space-lg);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--neutral-200);
+  }
+
+  .pagination-info {
+    color: var(--neutral-600);
+    font-size: 0.9rem;
+  }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+  }
+
+  .pagination-page {
+    font-weight: 500;
+    color: var(--neutral-700);
+  }
+
   .modal-overlay {
     position: fixed;
     top: 0;

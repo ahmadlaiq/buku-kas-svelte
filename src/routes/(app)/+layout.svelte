@@ -27,7 +27,7 @@
 
 <div class="layout">
   <aside class="sidebar">
-    <a href="/dashboard" class="sidebar-brand">💅 Buku Kas Salon</a>
+    <a href="/dashboard" class="sidebar-brand">Buku Kas Salon</a>
 
     <nav>
       <ul class="sidebar-menu">
