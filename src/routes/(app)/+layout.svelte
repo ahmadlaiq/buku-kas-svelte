@@ -15,7 +15,7 @@
     { path: "/dashboard", label: "Dashboard", icon: "📊" },
     { path: "/pendapatan", label: "Pendapatan", icon: "💰" },
     { path: "/pengeluaran", label: "Pengeluaran", icon: "💸" },
-    { path: "/beban-operasional", label: "Beban Operasional", icon: "🏢" },
+    // { path: "/beban-operasional", label: "Beban Operasional", icon: "🏢" },
     { path: "/beban-penyusutan", label: "Beban Penyusutan", icon: "📉" },
     { path: "/laporan", label: "Laporan Laba & Rugi", icon: "📈" },
   ];

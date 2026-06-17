@@ -3,38 +3,53 @@ import type { Actions, PageServerLoad } from './$types';
 import { prisma } from '$lib/server/prisma';
 
 export const load: PageServerLoad = async ({ url }) => {
-  const month = url.searchParams.get('month') || new Date().toISOString().slice(0, 7);
-  const startOfMonth = new Date(`${month}-01T00:00:00Z`);
-  const endOfMonth = new Date(startOfMonth);
-  endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+  // Get filter parameters
+  const startDate = url.searchParams.get('startDate');
+  const endDate = url.searchParams.get('endDate');
+  
+  // Build where clause
+  const where: any = {};
+  
+  // Date range filter
+  if (startDate || endDate) {
+    where.tanggal = {};
+    if (startDate) {
+      where.tanggal.gte = new Date(startDate + 'T00:00:00Z');
+    }
+    if (endDate) {
+      const endDateTime = new Date(endDate + 'T00:00:00Z');
+      endDateTime.setDate(endDateTime.getDate() + 1); // Include the end date
+      where.tanggal.lt = endDateTime;
+    }
+  }
   
   // Sorting
   const sortBy = url.searchParams.get('sortBy') || 'tanggal';
   const sortOrder = (url.searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
   const allowedSortFields = ['tanggal', 'nama_aset', 'nilai_aset', 'umur_ekonomis', 'nilai_penyusutan'];
   const validatedSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'tanggal';
+  
+  // Pagination
+  const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
+  const limit = 25;
+  const skip = (page - 1) * limit;
 
-  const data = await prisma.bebanPenyusutan.findMany({
-    where: {
-      tanggal: {
-        gte: startOfMonth,
-        lt: endOfMonth
-      }
-    },
-    orderBy: [
-      { [validatedSortBy]: sortOrder },
-      { created_at: 'desc' }
-    ]
-  });
+  const [data, totalCount] = await Promise.all([
+    prisma.bebanPenyusutan.findMany({
+      where,
+      orderBy: [
+        { [validatedSortBy]: sortOrder },
+        { created_at: 'desc' }
+      ],
+      take: limit,
+      skip
+    }),
+    prisma.bebanPenyusutan.count({ where })
+  ]);
 
   const totalResult = await prisma.bebanPenyusutan.aggregate({
     _sum: { nilai_penyusutan: true },
-    where: {
-      tanggal: {
-        gte: startOfMonth,
-        lt: endOfMonth
-      }
-    }
+    where
   });
 
   return {
@@ -43,9 +58,18 @@ export const load: PageServerLoad = async ({ url }) => {
       tanggal: p.tanggal.toISOString().split('T')[0]
     })),
     total: totalResult._sum.nilai_penyusutan || 0,
-    selectedMonth: month,
-    sortBy: validatedSortBy,
-    sortOrder: sortOrder
+    filters: {
+      startDate: startDate || '',
+      endDate: endDate || '',
+      sortBy: validatedSortBy,
+      sortOrder: sortOrder
+    },
+    pagination: {
+      page,
+      limit,
+      totalItems: totalCount,
+      totalPages: Math.ceil(totalCount / limit)
+    }
   };
 };
 
