@@ -74,6 +74,7 @@ export const load: PageServerLoad = async ({ url }) => {
   const totalPengeluaran = totalPengeluaranResult._sum.jumlah || 0;
 
   // Get operational costs grouped by category
+  /*
   const bebanOperasionalData = await prisma.bebanOperasional.groupBy({
     by: ['kategori'],
     _sum: { jumlah: true },
@@ -105,6 +106,7 @@ export const load: PageServerLoad = async ({ url }) => {
     }
   });
   const totalBebanOperasional = totalBebanOperasionalResult._sum.jumlah || 0;
+  */
 
   // Get depreciation
   const bebanPenyusutanData = await prisma.bebanPenyusutan.findMany({
@@ -140,7 +142,7 @@ export const load: PageServerLoad = async ({ url }) => {
   const totalBebanPenyusutan = totalBebanPenyusutanResult._sum.nilai_penyusutan || 0;
 
   // Calculate totals
-  const totalBiaya = totalPengeluaran + totalBebanOperasional + totalBebanPenyusutan;
+  const totalBiaya = totalPengeluaran + totalBebanPenyusutan; // Removed totalBebanOperasional
   const labaKotor = totalPendapatan - totalPengeluaran;
   const labaBersih = totalPendapatan - totalBiaya;
 
@@ -151,8 +153,8 @@ export const load: PageServerLoad = async ({ url }) => {
     totalPendapatan,
     pengeluaran,
     totalPengeluaran,
-    bebanOperasional,
-    totalBebanOperasional,
+    // bebanOperasional,
+    // totalBebanOperasional,
     bebanPenyusutan,
     totalBebanPenyusutan,
     totalBiaya,

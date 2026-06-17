@@ -46,12 +46,12 @@
       </div>
     </div>
 
-    <div class="stat-card">
+    <!-- <div class="stat-card">
       <div class="stat-label">🏢 Beban Operasional</div>
       <div class="stat-value text-error">
         {formatCurrency(data.stats.bebanOperasional)}
       </div>
-    </div>
+    </div> -->
 
     <div class="stat-card">
       <div class="stat-label">📉 Beban Penyusutan</div>

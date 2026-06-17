@@ -24,7 +24,7 @@
   let sortConfig = $state({
     pendapatan: { key: "total", order: "desc" },
     pengeluaran: { key: "total", order: "desc" },
-    bebanOperasional: { key: "total", order: "desc" },
+    // bebanOperasional: { key: "total", order: "desc" },
     bebanPenyusutan: { key: "total", order: "desc" },
   });
 
@@ -57,9 +57,9 @@
   let sortedPengeluaran = $derived(
     sortItems(data.pengeluaran, sortConfig.pengeluaran)
   );
-  let sortedBebanOperasional = $derived(
-    sortItems(data.bebanOperasional, sortConfig.bebanOperasional)
-  );
+  // let sortedBebanOperasional = $derived(
+  //   sortItems(data.bebanOperasional, sortConfig.bebanOperasional)
+  // );
   let sortedBebanPenyusutan = $derived(
     sortItems(data.bebanPenyusutan, sortConfig.bebanPenyusutan)
   );
@@ -203,7 +203,8 @@
         </table>
       </section>
 
-      <!-- BEBAN OPERASIONAL -->
+      <!-- BEBAN OPERASIONAL (HIDDEN) -->
+      <!--
       <section class="report-section">
         <h4 class="section-title">BEBAN OPERASIONAL</h4>
         <table class="report-table">
@@ -245,6 +246,7 @@
           </tbody>
         </table>
       </section>
+      -->
 
       <!-- BEBAN PENYUSUTAN -->
       <section class="report-section">

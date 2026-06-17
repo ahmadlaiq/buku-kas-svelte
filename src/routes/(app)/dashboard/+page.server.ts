@@ -59,7 +59,7 @@ export const load: PageServerLoad = async ({ url }) => {
   const totalBebanPenyusutan = totalBebanPenyusutanResult._sum.nilai_penyusutan || 0;
 
   // Laba/Rugi
-  const labaRugi = totalPendapatan - (totalPengeluaran + totalBebanOperasional + totalBebanPenyusutan);
+  const labaRugi = totalPendapatan - (totalPengeluaran + totalBebanPenyusutan);
 
   // Recent transactions
   const recentPendapatan = await prisma.pendapatan.findMany({
