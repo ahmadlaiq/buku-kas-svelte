@@ -81,8 +81,8 @@ export const actions: Actions = {
     const nilai_aset = parseFloat(formData.get('nilai_aset') as string);
     const umur_ekonomis = parseInt(formData.get('umur_ekonomis') as string);
     
-    // Calculate monthly depreciation
-    const nilai_penyusutan = nilai_aset / (umur_ekonomis * 12);
+    // Calculate monthly depreciation (umur is in months)
+    const nilai_penyusutan = nilai_aset / umur_ekonomis;
 
     if (!tanggal || !nama_aset || !nilai_aset || !umur_ekonomis || nilai_aset <= 0 || umur_ekonomis <= 0) {
       return fail(400, { error: 'Data tidak valid' });
@@ -103,6 +103,40 @@ export const actions: Actions = {
     } catch (error) {
       console.error('Create beban penyusutan error:', error);
       return fail(500, { error: 'Gagal menyimpan data' });
+    }
+  },
+
+  update: async ({ request }) => {
+    const formData = await request.formData();
+    const id = parseInt(formData.get('id') as string);
+    const tanggal = formData.get('tanggal') as string;
+    const nama_aset = formData.get('nama_aset') as string;
+    const nilai_aset = parseFloat(formData.get('nilai_aset') as string);
+    const umur_ekonomis = parseInt(formData.get('umur_ekonomis') as string);
+    
+    // Calculate monthly depreciation (umur is in months)
+    const nilai_penyusutan = nilai_aset / umur_ekonomis;
+
+    if (!id || !tanggal || !nama_aset || !nilai_aset || !umur_ekonomis || nilai_aset <= 0 || umur_ekonomis <= 0) {
+      return fail(400, { error: 'Data tidak valid' });
+    }
+
+    try {
+      await prisma.bebanPenyusutan.update({
+        where: { id },
+        data: {
+          tanggal: new Date(tanggal),
+          nama_aset,
+          nilai_aset,
+          umur_ekonomis,
+          nilai_penyusutan
+        }
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Update beban penyusutan error:', error);
+      return fail(500, { error: 'Gagal mengubah data' });
     }
   },
 

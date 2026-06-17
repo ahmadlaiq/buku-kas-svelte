@@ -8,18 +8,20 @@
 
   let showModal = $state(false);
   let formData = $state({
+    id: "",
     tanggal: new Date().toISOString().split("T")[0],
     nama_aset: "",
     nilai_aset: "",
     umur_ekonomis: "",
   });
+  let editMode = $state(false);
   let displayNilaiAset = $state("");
 
   let nilaiPenyusutan = $derived(() => {
     const nilai = parseFloat(formData.nilai_aset);
     const umur = parseInt(formData.umur_ekonomis);
     if (nilai && umur && nilai > 0 && umur > 0) {
-      return nilai / (umur * 12);
+      return nilai / umur;
     }
     return 0;
   });
@@ -41,13 +43,28 @@
   }
 
   function handleOpenModal() {
+    editMode = false;
     formData = {
+      id: "",
       tanggal: new Date().toISOString().split("T")[0],
       nama_aset: "",
       nilai_aset: "",
       umur_ekonomis: "",
     };
     displayNilaiAset = "";
+    showModal = true;
+  }
+
+  function handleEdit(item: any) {
+    editMode = true;
+    formData = {
+      id: item.id.toString(),
+      tanggal: item.tanggal,
+      nama_aset: item.nama_aset,
+      nilai_aset: item.nilai_aset.toString(),
+      umur_ekonomis: item.umur_ekonomis.toString(),
+    };
+    displayNilaiAset = formatNumber(item.nilai_aset.toString());
     showModal = true;
   }
 
@@ -111,7 +128,7 @@
   <!-- Info Box -->
   <div class="alert alert-info mb-lg">
     💡 <strong>Info:</strong> Penyusutan dihitung secara otomatis dengan metode garis
-    lurus (Nilai Aset ÷ Umur Ekonomis ÷ 12 bulan).
+    lurus (Nilai Aset ÷ Umur Ekonomis dalam Bulan).
   </div>
 
   <!-- Filter & Stats -->
@@ -187,7 +204,7 @@
                 {/if}
               </th>
               <th onclick={() => handleSort('umur_ekonomis')} style="text-align: center; cursor: pointer; user-select: none;">
-                Umur (Tahun)
+                Umur (Bulan)
                 {#if data.filters.sortBy === 'umur_ekonomis'}
                   {data.filters.sortOrder === 'asc' ? '↑' : '↓'}
                 {:else}
@@ -216,36 +233,44 @@
                 </td>
                 <td style="text-align: center;">
                   <span class="badge badge-primary"
-                    >{item.umur_ekonomis} tahun</span
+                    >{item.umur_ekonomis} Bulan</span
                   >
                 </td>
                 <td style="text-align: right;" class="font-semibold text-error">
                   {formatCurrency(item.nilai_penyusutan)}
                 </td>
                 <td style="text-align: center;">
-                  <form
-                    method="POST"
-                    action="?/delete"
-                    use:enhance={() => {
-                      return async ({ update }) => {
-                        await update();
-                        invalidateAll();
-                      };
-                    }}
-                  >
-                    <input type="hidden" name="id" value={item.id} />
+                  <div class="flex gap-sm justify-center">
                     <button
-                      type="submit"
-                      class="btn btn-danger btn-sm"
-                      onclick={(e) => {
-                        if (!confirm("Yakin ingin menghapus data ini?")) {
-                          e.preventDefault();
-                        }
+                      class="btn btn-secondary btn-sm"
+                      onclick={() => handleEdit(item)}
+                    >
+                      ✏️ Edit
+                    </button>
+                    <form
+                      method="POST"
+                      action="?/delete"
+                      use:enhance={() => {
+                        return async ({ update }) => {
+                          await update();
+                          invalidateAll();
+                        };
                       }}
                     >
-                      🗑️ Hapus
-                    </button>
-                  </form>
+                      <input type="hidden" name="id" value={item.id} />
+                      <button
+                        type="submit"
+                        class="btn btn-danger btn-sm"
+                        onclick={(e) => {
+                          if (!confirm("Yakin ingin menghapus data ini?")) {
+                            e.preventDefault();
+                          }
+                        }}
+                      >
+                        🗑️ Hapus
+                      </button>
+                    </form>
+                  </div>
                 </td>
               </tr>
             {/each}
@@ -301,7 +326,7 @@
   <div class="modal-overlay" onclick={() => (showModal = false)}>
     <div class="modal-content" onclick={(e) => e.stopPropagation()}>
       <div class="modal-header">
-        <h2>➕ Tambah Beban Penyusutan</h2>
+        <h2>{editMode ? '✏️ Edit' : '➕ Tambah'} Beban Penyusutan</h2>
         <button onclick={() => (showModal = false)} class="modal-close"
           >✕</button
         >
@@ -309,7 +334,7 @@
 
       <form
         method="POST"
-        action="?/create"
+        action={editMode ? "?/update" : "?/create"}
         use:enhance={() => {
           return async ({ result, update }) => {
             await update();
@@ -320,6 +345,9 @@
           };
         }}
       >
+        {#if editMode}
+          <input type="hidden" name="id" value={formData.id} />
+        {/if}
         <div class="form-group">
           <label for="tanggal" class="form-label">Tanggal</label>
           <input
@@ -362,7 +390,7 @@
 
         <div class="form-group">
           <label for="umur_ekonomis" class="form-label"
-            >Umur Ekonomis (Tahun)</label
+            >Umur Ekonomis (Bulan)</label
           >
           <input
             id="umur_ekonomis"
@@ -372,7 +400,7 @@
             bind:value={formData.umur_ekonomis}
             min="1"
             step="1"
-            placeholder="Estimasi masa pakai dalam tahun"
+            placeholder="Estimasi masa pakai dalam bulan"
             required
           />
         </div>
