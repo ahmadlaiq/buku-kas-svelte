@@ -4,7 +4,8 @@ import { prisma } from '$lib/server/prisma';
 export const load: PageServerLoad = async ({ url }) => {
   // Get month from query param or default to Dec 2025 (where seed data is)
   // In a real app, you might default to new Date().toISOString().slice(0, 7);
-  const currentMonth = url.searchParams.get('month') || '2025-12';
+  const currentMonth = url.searchParams.get('month') || new Date().toISOString().slice(0, 7);
+  const withPenyusutan = url.searchParams.get('penyusutan') !== 'false';
   
   const startOfMonth = new Date(`${currentMonth}-01T00:00:00Z`);
   const endOfMonth = new Date(startOfMonth);
@@ -47,16 +48,19 @@ export const load: PageServerLoad = async ({ url }) => {
   const totalBebanOperasional = totalBebanOperasionalResult._sum.jumlah || 0;
 
   // Total Beban Penyusutan
-  const totalBebanPenyusutanResult = await prisma.bebanPenyusutan.aggregate({
-    _sum: { nilai_penyusutan: true },
-    where: {
-      tanggal: {
-        gte: startOfMonth,
-        lt: endOfMonth
+  let totalBebanPenyusutan = 0;
+  if (withPenyusutan) {
+    const totalBebanPenyusutanResult = await prisma.bebanPenyusutan.aggregate({
+      _sum: { nilai_penyusutan: true },
+      where: {
+        tanggal: {
+          gte: startOfMonth,
+          lt: endOfMonth
+        }
       }
-    }
-  });
-  const totalBebanPenyusutan = totalBebanPenyusutanResult._sum.nilai_penyusutan || 0;
+    });
+    totalBebanPenyusutan = totalBebanPenyusutanResult._sum.nilai_penyusutan || 0;
+  }
 
   // Laba/Rugi
   const labaRugi = totalPendapatan - (totalPengeluaran + totalBebanPenyusutan);
@@ -93,6 +97,8 @@ export const load: PageServerLoad = async ({ url }) => {
   });
 
   return {
+    selectedMonth: currentMonth,
+    withPenyusutan,
     stats: {
       pendapatan: totalPendapatan,
       pengeluaran: totalPengeluaran,

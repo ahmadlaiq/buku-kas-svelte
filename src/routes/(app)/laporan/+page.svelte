@@ -11,8 +11,10 @@
     }).format(amount);
   }
 
-  function filterByMonth(month: string) {
-    const searchParams = new URLSearchParams({ month });
+  function updateFilter(month: string, penyusutan: boolean) {
+    const searchParams = new URLSearchParams();
+    if (month) searchParams.set("month", month);
+    searchParams.set("penyusutan", penyusutan.toString());
     window.location.href = `/laporan?${searchParams.toString()}`;
   }
 
@@ -82,15 +84,29 @@
 
   <!-- Filter -->
   <div class="card mb-lg no-print">
-    <div>
-      <label class="form-label">Filter Bulan:</label>
-      <input
-        type="month"
-        class="form-input"
-        style="width: auto; display: inline-block;"
-        value={data.selectedMonth}
-        onchange={(e) => filterByMonth(e.currentTarget.value)}
-      />
+    <div style="display: flex; gap: 1.5rem; align-items: flex-end; flex-wrap: wrap;">
+      <div>
+        <label class="form-label" style="margin-bottom: 0.5rem; display: block;">Filter Bulan:</label>
+        <input
+          type="month"
+          class="form-input"
+          style="width: auto;"
+          value={data.selectedMonth}
+          onchange={(e) => updateFilter(e.currentTarget.value, data.withPenyusutan)}
+        />
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+        <input
+          type="checkbox"
+          id="includePenyusutan"
+          style="width: 1.2rem; height: 1.2rem; cursor: pointer;"
+          checked={data.withPenyusutan}
+          onchange={(e) => updateFilter(data.selectedMonth, e.currentTarget.checked)}
+        />
+        <label for="includePenyusutan" style="cursor: pointer; font-weight: 500; user-select: none;">
+          Hitung Beban Penyusutan
+        </label>
+      </div>
     </div>
   </div>
 
@@ -249,6 +265,7 @@
       -->
 
       <!-- BEBAN PENYUSUTAN -->
+      {#if data.withPenyusutan}
       <section class="report-section">
         <h4 class="section-title">BEBAN PENYUSUTAN</h4>
         <table class="report-table">
@@ -282,13 +299,13 @@
             <tr class="subtotal-row">
               <td class="item-name"><strong>Total Beban Penyusutan</strong></td>
               <td class="item-value"
-                ><strong>{formatCurrency(data.totalBebanPenyusutan)}</strong
-                ></td
+                ><strong>{formatCurrency(data.totalBebanPenyusutan)}</strong></td
               >
             </tr>
           </tbody>
         </table>
       </section>
+      {/if}
 
       <!-- TOTAL BIAYA -->
       <section class="report-section highlight">

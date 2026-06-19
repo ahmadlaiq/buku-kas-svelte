@@ -18,6 +18,13 @@
       year: "numeric",
     });
   }
+
+  function updateFilter(month: string, penyusutan: boolean) {
+    const searchParams = new URLSearchParams();
+    if (month) searchParams.set("month", month);
+    searchParams.set("penyusutan", penyusutan.toString());
+    window.location.href = `/dashboard?${searchParams.toString()}`;
+  }
 </script>
 
 <svelte:head>
@@ -28,6 +35,34 @@
   <div class="mb-2xl">
     <h1 class="mb-sm">📊 Dashboard</h1>
     <p class="text-muted">Ringkasan keuangan salon Anda bulan ini</p>
+  </div>
+
+  <!-- Filter -->
+  <div class="card mb-lg">
+    <div style="display: flex; gap: 1.5rem; align-items: flex-end; flex-wrap: wrap;">
+      <div>
+        <label class="form-label" style="margin-bottom: 0.5rem; display: block;">Filter Bulan:</label>
+        <input
+          type="month"
+          class="form-input"
+          style="width: auto;"
+          value={data.selectedMonth}
+          onchange={(e) => updateFilter(e.currentTarget.value, data.withPenyusutan)}
+        />
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+        <input
+          type="checkbox"
+          id="includePenyusutan"
+          style="width: 1.2rem; height: 1.2rem; cursor: pointer;"
+          checked={data.withPenyusutan}
+          onchange={(e) => updateFilter(data.selectedMonth, e.currentTarget.checked)}
+        />
+        <label for="includePenyusutan" style="cursor: pointer; font-weight: 500; user-select: none;">
+          Hitung Beban Penyusutan
+        </label>
+      </div>
+    </div>
   </div>
 
   <!-- Stats Grid -->
@@ -53,12 +88,14 @@
       </div>
     </div> -->
 
+    {#if data.withPenyusutan}
     <div class="stat-card">
       <div class="stat-label">📉 Beban Penyusutan</div>
       <div class="stat-value text-error">
         {formatCurrency(data.stats.bebanPenyusutan)}
       </div>
     </div>
+    {/if}
 
     <div class="stat-card" style="grid-column: span 2;">
       <div class="stat-label">📈 Laba/Rugi Bersih</div>

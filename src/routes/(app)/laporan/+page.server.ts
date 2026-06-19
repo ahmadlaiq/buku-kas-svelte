@@ -3,6 +3,7 @@ import { prisma } from '$lib/server/prisma';
 
 export const load: PageServerLoad = async ({ url }) => {
   const month = url.searchParams.get('month') || new Date().toISOString().slice(0, 7);
+  const withPenyusutan = url.searchParams.get('penyusutan') !== 'false';
   const startOfMonth = new Date(`${month}-01T00:00:00Z`);
   const endOfMonth = new Date(startOfMonth);
   endOfMonth.setMonth(endOfMonth.getMonth() + 1);
@@ -109,37 +110,42 @@ export const load: PageServerLoad = async ({ url }) => {
   */
 
   // Get depreciation
-  const bebanPenyusutanData = await prisma.bebanPenyusutan.findMany({
-    where: {
-      tanggal: {
-        gte: startOfMonth,
-        lt: endOfMonth
-      }
-    },
-    select: {
-      nama_aset: true,
-      nilai_penyusutan: true
-    },
-    orderBy: {
-      nilai_penyusutan: 'desc'
-    }
-  });
+  let bebanPenyusutan: any[] = [];
+  let totalBebanPenyusutan = 0;
 
-  const bebanPenyusutan = bebanPenyusutanData.map(p => ({
-    kategori: p.nama_aset,
-    total: p.nilai_penyusutan
-  }));
-
-  const totalBebanPenyusutanResult = await prisma.bebanPenyusutan.aggregate({
-    _sum: { nilai_penyusutan: true },
-    where: {
-      tanggal: {
-        gte: startOfMonth,
-        lt: endOfMonth
+  if (withPenyusutan) {
+    const bebanPenyusutanData = await prisma.bebanPenyusutan.findMany({
+      where: {
+        tanggal: {
+          gte: startOfMonth,
+          lt: endOfMonth
+        }
+      },
+      select: {
+        nama_aset: true,
+        nilai_penyusutan: true
+      },
+      orderBy: {
+        nilai_penyusutan: 'desc'
       }
-    }
-  });
-  const totalBebanPenyusutan = totalBebanPenyusutanResult._sum.nilai_penyusutan || 0;
+    });
+
+    bebanPenyusutan = bebanPenyusutanData.map(p => ({
+      kategori: p.nama_aset,
+      total: p.nilai_penyusutan
+    }));
+
+    const totalBebanPenyusutanResult = await prisma.bebanPenyusutan.aggregate({
+      _sum: { nilai_penyusutan: true },
+      where: {
+        tanggal: {
+          gte: startOfMonth,
+          lt: endOfMonth
+        }
+      }
+    });
+    totalBebanPenyusutan = totalBebanPenyusutanResult._sum.nilai_penyusutan || 0;
+  }
 
   // Calculate totals
   const totalBiaya = totalPengeluaran + totalBebanPenyusutan; // Removed totalBebanOperasional
@@ -148,6 +154,7 @@ export const load: PageServerLoad = async ({ url }) => {
 
   return {
     selectedMonth: month,
+    withPenyusutan,
     monthName: new Date(month).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
     pendapatan,
     totalPendapatan,
