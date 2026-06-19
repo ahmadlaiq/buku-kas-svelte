@@ -1,7 +1,68 @@
 <script lang="ts">
   import type { PageData } from "./$types";
+  import Chart from "chart.js/auto";
 
   let { data }: { data: PageData } = $props();
+
+  function renderChart(node: HTMLCanvasElement, stats: any) {
+    const chart = new Chart(node, {
+      type: "bar",
+      data: {
+        labels: ["Pendapatan", "Pengeluaran", "Laba/Rugi"],
+        datasets: [
+          {
+            label: "Nominal",
+            data: [
+              stats.pendapatan,
+              stats.pengeluaran + stats.bebanPenyusutan,
+              stats.labaRugi,
+            ],
+            backgroundColor: [
+              "rgba(16, 185, 129, 0.8)", // success
+              "rgba(239, 68, 68, 0.8)", // error
+              stats.labaRugi >= 0
+                ? "rgba(59, 130, 246, 0.8)" // primary blue
+                : "rgba(239, 68, 68, 0.8)",
+            ],
+            borderRadius: 6,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => formatCurrency(ctx.raw as number)
+            }
+          }
+        },
+        scales: {
+          y: { beginAtZero: true },
+        },
+      },
+    });
+
+    return {
+      update(newStats: any) {
+        chart.data.datasets[0].data = [
+          newStats.pendapatan,
+          newStats.pengeluaran + newStats.bebanPenyusutan,
+          newStats.labaRugi,
+        ];
+        const bgColors = chart.data.datasets[0].backgroundColor as string[];
+        bgColors[2] = newStats.labaRugi >= 0
+            ? "rgba(59, 130, 246, 0.8)"
+            : "rgba(239, 68, 68, 0.8)";
+        chart.update();
+      },
+      destroy() {
+        chart.destroy();
+      },
+    };
+  }
 
   function formatCurrency(amount: number) {
     return new Intl.NumberFormat("id-ID", {
@@ -113,6 +174,16 @@
       >
         {data.stats.labaRugi >= 0 ? "📈 Untung" : "📉 Rugi"}
       </div>
+    </div>
+  </div>
+
+  <!-- Chart Section -->
+  <div class="card" style="margin-bottom: var(--space-2xl);">
+    <div class="card-header">
+      <h3 class="card-title">📈 Grafik Ringkasan</h3>
+    </div>
+    <div style="height: 350px; width: 100%;">
+      <canvas use:renderChart={data.stats}></canvas>
     </div>
   </div>
 
