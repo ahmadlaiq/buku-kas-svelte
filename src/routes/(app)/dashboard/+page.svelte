@@ -4,58 +4,79 @@
 
   let { data }: { data: PageData } = $props();
 
-  function renderChart(node: HTMLCanvasElement, stats: any) {
+  function renderChart(node: HTMLCanvasElement, trendData: any[]) {
     const chart = new Chart(node, {
-      type: "bar",
+      type: "line",
       data: {
-        labels: ["Pendapatan", "Pengeluaran", "Laba/Rugi"],
+        labels: trendData.map(d => d.monthLabel),
         datasets: [
           {
-            label: "Nominal",
-            data: [
-              stats.pendapatan,
-              stats.pengeluaran + stats.bebanPenyusutan,
-              stats.labaRugi,
-            ],
-            backgroundColor: [
-              "rgba(16, 185, 129, 0.8)", // success
-              "rgba(239, 68, 68, 0.8)", // error
-              stats.labaRugi >= 0
-                ? "rgba(59, 130, 246, 0.8)" // primary blue
-                : "rgba(239, 68, 68, 0.8)",
-            ],
-            borderRadius: 6,
+            label: "Pendapatan",
+            data: trendData.map(d => d.pendapatan),
+            borderColor: "rgba(16, 185, 129, 1)",
+            backgroundColor: "rgba(16, 185, 129, 0.1)",
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true,
+            pointBackgroundColor: "rgba(16, 185, 129, 1)"
           },
+          {
+            label: "Pengeluaran",
+            data: trendData.map(d => d.pengeluaran),
+            borderColor: "rgba(239, 68, 68, 1)",
+            backgroundColor: "rgba(239, 68, 68, 0.1)",
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true,
+            pointBackgroundColor: "rgba(239, 68, 68, 1)"
+          },
+          {
+            label: "Laba Bersih",
+            data: trendData.map(d => d.labaRugi),
+            borderColor: "rgba(59, 130, 246, 1)",
+            backgroundColor: "rgba(59, 130, 246, 0.1)",
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true,
+            pointBackgroundColor: "rgba(59, 130, 246, 1)"
+          }
         ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
         plugins: {
-          legend: { display: false },
+          legend: { 
+            position: 'top',
+            labels: { usePointStyle: true, boxWidth: 8 }
+          },
           tooltip: {
             callbacks: {
-              label: (ctx) => formatCurrency(ctx.raw as number)
+              label: (ctx) => `${ctx.dataset.label}: ${formatCurrency(ctx.raw as number)}`
             }
           }
         },
         scales: {
-          y: { beginAtZero: true },
+          y: { 
+            beginAtZero: true,
+            ticks: {
+              callback: (val) => new Intl.NumberFormat("id-ID", { notation: "compact", compactDisplay: "short" }).format(val as number)
+            }
+          },
         },
       },
     });
 
     return {
-      update(newStats: any) {
-        chart.data.datasets[0].data = [
-          newStats.pendapatan,
-          newStats.pengeluaran + newStats.bebanPenyusutan,
-          newStats.labaRugi,
-        ];
-        const bgColors = chart.data.datasets[0].backgroundColor as string[];
-        bgColors[2] = newStats.labaRugi >= 0
-            ? "rgba(59, 130, 246, 0.8)"
-            : "rgba(239, 68, 68, 0.8)";
+      update(newTrendData: any[]) {
+        chart.data.labels = newTrendData.map(d => d.monthLabel);
+        chart.data.datasets[0].data = newTrendData.map(d => d.pendapatan);
+        chart.data.datasets[1].data = newTrendData.map(d => d.pengeluaran);
+        chart.data.datasets[2].data = newTrendData.map(d => d.labaRugi);
         chart.update();
       },
       destroy() {
@@ -180,10 +201,10 @@
   <!-- Chart Section -->
   <div class="card" style="margin-bottom: var(--space-2xl);">
     <div class="card-header">
-      <h3 class="card-title">📈 Grafik Ringkasan</h3>
+      <h3 class="card-title">📈 Tren Keuangan Bulanan</h3>
     </div>
     <div style="height: 350px; width: 100%;">
-      <canvas use:renderChart={data.stats}></canvas>
+      <canvas use:renderChart={data.trendData}></canvas>
     </div>
   </div>
 

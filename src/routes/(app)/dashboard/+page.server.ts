@@ -96,9 +96,45 @@ export const load: PageServerLoad = async ({ url }) => {
     }
   });
 
+  // Fetch all time data for trend chart
+  const allPendapatan = await prisma.pendapatan.findMany({ select: { tanggal: true, jumlah: true } });
+  const allPengeluaran = await prisma.pengeluaran.findMany({ select: { tanggal: true, jumlah: true } });
+  const allPenyusutan = await prisma.bebanPenyusutan.findMany({ select: { tanggal: true, nilai_penyusutan: true } });
+
+  const trendMap = new Map<string, { pendapatan: number, pengeluaran: number, penyusutan: number }>();
+  
+  const addToTrend = (tanggal: Date, type: 'pendapatan' | 'pengeluaran' | 'penyusutan', amount: number) => {
+    const monthStr = tanggal.toISOString().slice(0, 7);
+    if (!trendMap.has(monthStr)) {
+      trendMap.set(monthStr, { pendapatan: 0, pengeluaran: 0, penyusutan: 0 });
+    }
+    trendMap.get(monthStr)![type] += amount;
+  };
+
+  allPendapatan.forEach(p => addToTrend(p.tanggal, 'pendapatan', p.jumlah));
+  allPengeluaran.forEach(p => addToTrend(p.tanggal, 'pengeluaran', p.jumlah));
+  allPenyusutan.forEach(p => addToTrend(p.tanggal, 'penyusutan', p.nilai_penyusutan));
+
+  const sortedMonths = Array.from(trendMap.keys()).sort();
+  const trendData = sortedMonths.map(month => {
+    const data = trendMap.get(month)!;
+    const pengeluaranTotal = data.pengeluaran + (withPenyusutan ? data.penyusutan : 0);
+    const labaRugi = data.pendapatan - pengeluaranTotal;
+    const dateObj = new Date(`${month}-01T00:00:00Z`);
+    const monthName = dateObj.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
+
+    return {
+      monthLabel: monthName,
+      pendapatan: data.pendapatan,
+      pengeluaran: pengeluaranTotal,
+      labaRugi
+    };
+  });
+
   return {
     selectedMonth: currentMonth,
     withPenyusutan,
+    trendData,
     stats: {
       pendapatan: totalPendapatan,
       pengeluaran: totalPengeluaran,
