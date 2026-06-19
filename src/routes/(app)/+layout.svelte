@@ -60,7 +60,7 @@
         class="btn btn-danger"
         style="width: 100%;"
       >
-        🚪 Keluar
+        Keluar
       </button>
     </div>
   </aside>

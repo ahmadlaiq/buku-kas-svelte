@@ -37,7 +37,7 @@ Halaman Login adalah pintu masuk ke aplikasi Buku Kas Salon. Sistem autentikasi 
 
 ### Login Setelah Logout
 
-1. Klik menu **"🚪 Keluar"** di sidebar (di bagian bawah)
+1. Klik menu **"Keluar"** di sidebar (di bagian bawah)
 2. Anda akan diarahkan kembali ke halaman Login
 3. Masukkan username dan password
 4. Klik **"Masuk"**
