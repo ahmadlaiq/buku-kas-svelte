@@ -42,13 +42,13 @@
 <div class="login-container">
   <div class="login-card">
     <div class="login-header">
-      <h1 class="login-title">💅 Buku Kas Salon</h1>
+      <h1 class="login-title">Buku Kas Salon</h1>
       <p class="login-subtitle">Sistem Manajemen Keuangan Salon</p>
     </div>
 
     {#if error}
       <div class="alert alert-error mb-lg">
-        ⚠️ {error}
+        {error}
       </div>
     {/if}
 
@@ -84,7 +84,7 @@
           <div class="spinner" style="width: 20px; height: 20px; border-width: 2px;"></div>
           Memproses...
         {:else}
-          🔐 Masuk
+          Masuk
         {/if}
       </button>
     </form>

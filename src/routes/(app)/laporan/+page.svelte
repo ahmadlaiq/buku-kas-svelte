@@ -97,7 +97,7 @@
   <!-- Report Card -->
   <div class="report-card">
     <div class="report-header">
-      <h2>💅 BUKU KAS SALON</h2>
+      <h2>BUKU KAS SALON</h2>
       <h3>LAPORAN LABA RUGI</h3>
       <p>Periode: {data.monthName}</p>
     </div>

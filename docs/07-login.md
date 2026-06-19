@@ -32,7 +32,7 @@ Halaman Login adalah pintu masuk ke aplikasi Buku Kas Salon. Sistem autentikasi 
 3. Masukkan kredensial default:
    - **Username**: `admin`
    - **Password**: `admin123`
-4. Klik tombol **"🔐 Masuk"**
+4. Klik tombol **"Masuk"**
 5. Jika berhasil, Anda akan diarahkan ke **Dashboard**
 
 ### Login Setelah Logout
@@ -40,7 +40,7 @@ Halaman Login adalah pintu masuk ke aplikasi Buku Kas Salon. Sistem autentikasi 
 1. Klik menu **"🚪 Keluar"** di sidebar (di bagian bawah)
 2. Anda akan diarahkan kembali ke halaman Login
 3. Masukkan username dan password
-4. Klik **"🔐 Masuk"**
+4. Klik **"Masuk"**
 
 ## User Default
 

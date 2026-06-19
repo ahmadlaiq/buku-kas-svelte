@@ -142,7 +142,7 @@ Di bawah laporan, ada 4 kartu ringkasan:
 ### Format Laporan Standar
 
 ```
-💅 BUKU KAS SALON
+BUKU KAS SALON
 LAPORAN LABA RUGI
 Periode: [Nama Bulan Tahun]
 
