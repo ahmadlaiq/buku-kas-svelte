@@ -18,6 +18,8 @@
     // { path: "/beban-operasional", label: "Beban Operasional", icon: "🏢" },
     { path: "/beban-penyusutan", label: "Beban Penyusutan", icon: "📉" },
     { path: "/laporan", label: "Laporan Laba & Rugi", icon: "📈" },
+    { path: "/master/karyawan", label: "Master Karyawan", icon: "👩‍💼" },
+    { path: "/master/customer", label: "Master Customer", icon: "🤝" },
   ];
 
   function isActive(path: string) {

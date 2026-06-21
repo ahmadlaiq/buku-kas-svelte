@@ -64,3 +64,23 @@ model BebanPenyusutan {
 
   @@map("beban_penyusutan")
 }
+
+model Karyawan {
+  id         Int      @id @default(autoincrement())
+  nama       String
+  no_hp      String?
+  posisi     String?
+  created_at DateTime @default(now()) @map("created_at")
+
+  @@map("karyawan")
+}
+
+model Customer {
+  id         Int      @id @default(autoincrement())
+  nama       String
+  no_hp      String?
+  alamat     String?
+  created_at DateTime @default(now()) @map("created_at")
+
+  @@map("customer")
+}
