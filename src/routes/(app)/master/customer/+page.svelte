@@ -7,6 +7,12 @@
 
   let showAddModal = false;
   let loading = false;
+
+  function changePage(newPage: number) {
+    const searchParams = new URL(window.location.href).searchParams;
+    searchParams.set("page", newPage.toString());
+    window.location.href = `?${searchParams.toString()}`;
+  }
 </script>
 
 <svelte:head>
@@ -87,6 +93,42 @@
     </table>
   </div>
 </div>
+
+<!-- Pagination -->
+{#if data.pagination && data.pagination.totalPages > 1}
+  <div class="pagination-container">
+    <div class="pagination-info">
+      Menampilkan {Math.min(
+        (data.pagination.page - 1) * data.pagination.limit + 1,
+        data.pagination.totalItems,
+      )} -
+      {Math.min(
+        data.pagination.page * data.pagination.limit,
+        data.pagination.totalItems,
+      )}
+      dari {data.pagination.totalItems} data
+    </div>
+    <div class="pagination-controls">
+      <button
+        class="btn btn-secondary btn-sm"
+        disabled={data.pagination.page <= 1}
+        on:click={() => changePage(data.pagination.page - 1)}
+      >
+        ⬅️ Sebelumnya
+      </button>
+      <span class="pagination-page">
+        Halaman {data.pagination.page} / {data.pagination.totalPages}
+      </span>
+      <button
+        class="btn btn-secondary btn-sm"
+        disabled={data.pagination.page >= data.pagination.totalPages}
+        on:click={() => changePage(data.pagination.page + 1)}
+      >
+        Selanjutnya ➡️
+      </button>
+    </div>
+  </div>
+{/if}
 
 {#if showAddModal}
   <div class="modal">
@@ -222,6 +264,27 @@
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+  .pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--space-lg);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--neutral-200);
+  }
+  .pagination-info {
+    color: var(--neutral-600);
+    font-size: 0.9rem;
+  }
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+  }
+  .pagination-page {
+    font-weight: 500;
+    color: var(--neutral-700);
   }
   textarea.form-control {
     resize: vertical;

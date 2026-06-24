@@ -10,16 +10,17 @@ export const load: PageServerLoad = async ({ url }) => {
   const skip = (page - 1) * limit;
 
   try {
-    const [karyawan, totalCount] = await Promise.all([
-      prisma.karyawan.findMany({
+    const [material, totalCount] = await Promise.all([
+      prisma.masterMaterial.findMany({
+        where: { jenis: 'JASA' },
         orderBy: { created_at: 'desc' },
         take: limit,
         skip
       }),
-      prisma.karyawan.count()
+      prisma.masterMaterial.count({ where: { jenis: 'JASA' } })
     ]);
     return { 
-      karyawan,
+      material,
       pagination: {
         page,
         limit,
@@ -28,9 +29,9 @@ export const load: PageServerLoad = async ({ url }) => {
       }
     };
   } catch (error) {
-    console.error('Error fetching karyawan:', error);
+    console.error('Error fetching jasa:', error);
     return { 
-      karyawan: [],
+      material: [],
       pagination: { page: 1, limit: 25, totalItems: 0, totalPages: 0 }
     };
   }
@@ -40,25 +41,30 @@ export const actions: Actions = {
   create: async ({ request }) => {
     const data = await request.formData();
     const nama = data.get('nama') as string;
-    const no_hp = data.get('no_hp') as string;
-    const posisi = data.get('posisi') as string;
+    const kategori = data.get('kategori') as string;
+    const hargaStr = data.get('harga') as string;
+    const harga = hargaStr ? parseFloat(hargaStr) : 0;
 
     if (!nama) {
-      return fail(400, { error: 'Nama karyawan harus diisi' });
+      return fail(400, { error: 'Nama jasa harus diisi' });
     }
 
     try {
-      await prisma.karyawan.create({
+      await prisma.masterMaterial.create({
         data: {
           nama,
-          no_hp: no_hp || null,
-          posisi: posisi || null,
+          jenis: 'JASA',
+          kategori: kategori || null,
+          harga
         }
       });
       return { success: true };
-    } catch (error) {
-      console.error('Error creating karyawan:', error);
-      return fail(500, { error: 'Gagal menambahkan karyawan' });
+    } catch (error: any) {
+      console.error('Error creating jasa:', error);
+      if (error.code === 'P2002') {
+        return fail(400, { error: 'Nama jasa sudah ada' });
+      }
+      return fail(500, { error: 'Gagal menambahkan jasa' });
     }
   },
 
@@ -71,13 +77,13 @@ export const actions: Actions = {
     }
 
     try {
-      await prisma.karyawan.delete({
+      await prisma.masterMaterial.delete({
         where: { id }
       });
       return { success: true };
     } catch (error) {
-      console.error('Error deleting karyawan:', error);
-      return fail(500, { error: 'Gagal menghapus karyawan' });
+      console.error('Error deleting jasa:', error);
+      return fail(500, { error: 'Gagal menghapus jasa' });
     }
   }
 };

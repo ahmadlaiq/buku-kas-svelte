@@ -20,6 +20,14 @@
     { path: "/laporan", label: "Laporan Laba & Rugi", icon: "📈" },
     { path: "/master/karyawan", label: "Master Karyawan", icon: "👩‍💼" },
     { path: "/master/customer", label: "Master Customer", icon: "🤝" },
+    {
+      label: "Master Material",
+      icon: "📦",
+      subItems: [
+        { path: "/master/jasa", label: "Master Jasa", icon: "💆" },
+        { path: "/master/barang", label: "Master Barang", icon: "🛍️" },
+      ]
+    }
   ];
 
   function isActive(path: string) {
@@ -35,14 +43,31 @@
       <ul class="sidebar-menu">
         {#each menuItems as item}
           <li class="sidebar-item">
-            <a
-              href={item.path}
-              class="sidebar-link"
-              class:active={isActive(item.path)}
-            >
-              <span>{item.icon}</span>
-              <span>{item.label}</span>
-            </a>
+            {#if item.subItems}
+              <div class="sidebar-link" style="cursor: default; font-weight: 600;">
+                <span>{item.icon}</span>
+                <span>{item.label}</span>
+              </div>
+              <ul class="sidebar-submenu" style="margin-left: 2rem; list-style: none; padding: 0;">
+                {#each item.subItems as sub}
+                  <li class="sidebar-item" style="margin-top: 0.5rem;">
+                    <a href={sub.path} class="sidebar-link" class:active={isActive(sub.path)}>
+                      <span>{sub.icon}</span>
+                      <span>{sub.label}</span>
+                    </a>
+                  </li>
+                {/each}
+              </ul>
+            {:else}
+              <a
+                href={item.path}
+                class="sidebar-link"
+                class:active={isActive(item.path)}
+              >
+                <span>{item.icon}</span>
+                <span>{item.label}</span>
+              </a>
+            {/if}
           </li>
         {/each}
       </ul>

@@ -85,3 +85,14 @@ model Customer {
 
   @@map("customer")
 }
+
+model MasterMaterial {
+  id         Int      @id @default(autoincrement())
+  jenis      String   // Akan berisi "JASA" atau "BARANG"
+  kategori   String?  // Contoh: "Nail Art", "Hair Treatment", "Produk", "Potong Rambut"
+  nama       String   @unique
+  harga      Float?   // Harga standar
+  created_at DateTime @default(now()) @map("created_at")
+
+  @@map("master_material")
+}

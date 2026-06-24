@@ -13,19 +13,27 @@
     searchParams.set("page", newPage.toString());
     window.location.href = `?${searchParams.toString()}`;
   }
+
+  function formatCurrency(amount: number) {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0
+    }).format(amount);
+  }
 </script>
 
 <svelte:head>
-  <title>Master Karyawan - Buku Kas</title>
+  <title>Master Barang - Buku Kas</title>
 </svelte:head>
 
 <div class="header">
   <div>
-    <h1 class="text-2xl font-bold">Master Karyawan</h1>
-    <p class="text-muted">Kelola data karyawan salon</p>
+    <h1 class="text-2xl font-bold">Master Barang</h1>
+    <p class="text-muted">Kelola data barang/produk salon</p>
   </div>
   <button class="btn btn-primary" on:click={() => (showAddModal = true)}>
-    + Tambah Karyawan
+    + Tambah Barang
   </button>
 </div>
 
@@ -37,7 +45,7 @@
 
 {#if form?.success}
   <div class="alert alert-success" style="margin-bottom: 1rem;">
-    Berhasil menyimpan data karyawan!
+    Berhasil menyimpan data barang!
   </div>
 {/if}
 
@@ -46,18 +54,18 @@
     <table class="table">
       <thead>
         <tr>
-          <th>Nama</th>
-          <th>Posisi</th>
-          <th>No HP</th>
+          <th>Nama Barang</th>
+          <th>Kategori</th>
+          <th>Harga Default</th>
           <th style="width: 100px;">Aksi</th>
         </tr>
       </thead>
       <tbody>
-        {#each data.karyawan as item}
+        {#each data.material as item}
           <tr>
             <td class="font-medium">{item.nama}</td>
-            <td>{item.posisi || '-'}</td>
-            <td>{item.no_hp || '-'}</td>
+            <td>{item.kategori || '-'}</td>
+            <td>{item.harga ? formatCurrency(item.harga) : '-'}</td>
             <td>
               <form method="POST" action="?/delete" use:enhance={() => {
                 loading = true;
@@ -72,7 +80,7 @@
                   class="btn btn-sm btn-danger"
                   disabled={loading}
                   on:click|preventDefault={(e) => {
-                    if (confirm('Yakin ingin menghapus karyawan ini?')) {
+                    if (confirm('Yakin ingin menghapus barang ini?')) {
                       e.currentTarget.form?.requestSubmit();
                     }
                   }}
@@ -85,7 +93,7 @@
         {:else}
           <tr>
             <td colspan="4" class="text-center text-muted" style="padding: 2rem;">
-              Belum ada data karyawan
+              Belum ada data barang
             </td>
           </tr>
         {/each}
@@ -134,7 +142,7 @@
   <div class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 class="text-xl font-bold">Tambah Karyawan</h2>
+        <h2 class="text-xl font-bold">Tambah Barang</h2>
         <button class="btn-close" on:click={() => (showAddModal = false)}>✕</button>
       </div>
 
@@ -151,36 +159,36 @@
         }}
       >
         <div class="form-group">
-          <label for="nama" class="form-label">Nama Karyawan *</label>
+          <label for="nama" class="form-label">Nama Barang *</label>
           <input
             type="text"
             id="nama"
             name="nama"
             class="form-control"
             required
-            placeholder="Masukkan nama karyawan"
+            placeholder="Contoh: Shampo 500ml"
           />
         </div>
 
         <div class="form-group">
-          <label for="posisi" class="form-label">Posisi</label>
+          <label for="kategori" class="form-label">Kategori</label>
           <input
             type="text"
-            id="posisi"
-            name="posisi"
+            id="kategori"
+            name="kategori"
             class="form-control"
-            placeholder="Contoh: Terapis, Kasir"
+            placeholder="Contoh: Produk Rambut, Skincare, dll"
           />
         </div>
 
         <div class="form-group">
-          <label for="no_hp" class="form-label">No. HP</label>
+          <label for="harga" class="form-label">Harga Default (Rp)</label>
           <input
-            type="text"
-            id="no_hp"
-            name="no_hp"
+            type="number"
+            id="harga"
+            name="harga"
             class="form-control"
-            placeholder="08123xxxx"
+            placeholder="0"
           />
         </div>
 
@@ -195,7 +203,7 @@
             Batal
           </button>
           <button type="submit" class="btn btn-primary" style="flex: 1;" disabled={loading}>
-            {loading ? 'Menyimpan...' : 'Simpan Karyawan'}
+            {loading ? 'Menyimpan...' : 'Simpan Barang'}
           </button>
         </div>
       </form>

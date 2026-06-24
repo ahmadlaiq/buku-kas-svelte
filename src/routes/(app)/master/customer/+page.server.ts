@@ -4,15 +4,35 @@ import type { PageServerLoad, Actions } from './$types';
 
 const prisma = new PrismaClient();
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ url }) => {
+  const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
+  const limit = 25;
+  const skip = (page - 1) * limit;
+
   try {
-    const customer = await prisma.customer.findMany({
-      orderBy: { created_at: 'desc' }
-    });
-    return { customer };
+    const [customer, totalCount] = await Promise.all([
+      prisma.customer.findMany({
+        orderBy: { created_at: 'desc' },
+        take: limit,
+        skip
+      }),
+      prisma.customer.count()
+    ]);
+    return { 
+      customer,
+      pagination: {
+        page,
+        limit,
+        totalItems: totalCount,
+        totalPages: Math.ceil(totalCount / limit)
+      }
+    };
   } catch (error) {
     console.error('Error fetching customer:', error);
-    return { customer: [] };
+    return { 
+      customer: [],
+      pagination: { page: 1, limit: 25, totalItems: 0, totalPages: 0 }
+    };
   }
 };
 
