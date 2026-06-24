@@ -15,7 +15,20 @@
   });
   let displayJumlah = $state("");
 
-  const kategoriOptions = ["Hair Treatment", "Nail Art", "Product"];
+  const kategoriGroups = [
+    {
+      label: "Hair Treatment",
+      options: ["Hair Treatment", "Potong Rambut"]
+    },
+    {
+      label: "Nail Art",
+      options: ["Nail Art"]
+    },
+    {
+      label: "Product",
+      options: ["Product"]
+    }
+  ];
 
   function formatCurrency(amount: number) {
     return new Intl.NumberFormat("id-ID", {
@@ -122,8 +135,12 @@
         <label class="form-label">Kategori:</label>
         <select class="form-select" bind:value={filterKategori}>
           <option value="all">Semua Kategori</option>
-          {#each kategoriOptions as kategori}
-            <option value={kategori}>{kategori}</option>
+          {#each kategoriGroups as group}
+            <optgroup label={group.label}>
+              {#each group.options as kategori}
+                <option value={kategori}>{kategori}</option>
+              {/each}
+            </optgroup>
           {/each}
         </select>
       </div>
@@ -330,8 +347,12 @@
             required
           >
             <option value="">Pilih Kategori</option>
-            {#each kategoriOptions as kategori}
-              <option value={kategori}>{kategori}</option>
+            {#each kategoriGroups as group}
+              <optgroup label={group.label}>
+                {#each group.options as kategori}
+                  <option value={kategori}>{kategori}</option>
+                {/each}
+              </optgroup>
             {/each}
           </select>
         </div>
