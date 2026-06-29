@@ -27,7 +27,8 @@
         { path: "/master/jasa", label: "Master Jasa", icon: "💆" },
         { path: "/master/barang", label: "Master Barang", icon: "🛍️" },
       ]
-    }
+    },
+    { path: "/stock", label: "Stock Barang", icon: "📦" }
   ];
 
   function isActive(path: string) {

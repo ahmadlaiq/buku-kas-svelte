@@ -92,7 +92,26 @@ model MasterMaterial {
   kategori   String?  // Contoh: "Nail Art", "Hair Treatment", "Produk", "Potong Rambut"
   nama       String   @unique
   harga      Float?   // Harga standar
+  stock      Int      @default(0)
+  barcode    String?  @unique
   created_at DateTime @default(now()) @map("created_at")
+  stock_logs StockLog[]
 
   @@map("master_material")
+}
+
+model StockLog {
+  id             Int            @id @default(autoincrement())
+  material_id    Int
+  material       MasterMaterial @relation(fields: [material_id], references: [id], onDelete: Cascade)
+  jenis          String         // "IN" (Tambah), "OUT" (Kurang/Jual), "ADJUST" (Penyesuaian Manual)
+  jumlah         Int            // Jumlah perubahan (positif atau negatif)
+  stok_sebelum   Int            // Stok sebelum perubahan
+  stok_sesudah   Int            // Stok setelah perubahan
+  keterangan     String?
+  latitude       Float?
+  longitude      Float?
+  created_at     DateTime       @default(now()) @map("created_at")
+
+  @@map("stock_log")
 }
