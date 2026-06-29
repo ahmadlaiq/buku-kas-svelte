@@ -17,6 +17,32 @@
   let errorMessage = $state("");
   let isScanningBlocked = $state(false);
 
+  function playSound(type: 'success' | 'error') {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (type === 'success') {
+      // Dua nada naik - nyaman & jelas
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(1320, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.4);
+    } else {
+      // Dua nada turun - sinyal gagal
+      osc.frequency.setValueAtTime(400, ctx.currentTime);
+      osc.frequency.setValueAtTime(220, ctx.currentTime + 0.18);
+      gain.gain.setValueAtTime(0.5, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.5);
+    }
+  }
+
   onMount(() => {
     // Check Geolocation
     if (!navigator.geolocation) {
@@ -104,22 +130,25 @@
       const data = await res.json();
       if (res.ok) {
         scanStatus = "success";
-        statusMessage = `Sukses [${decodedText}]\n${data.data.nama} (Stok: ${data.data.stock})`;
+        statusMessage = `✅ ${data.data.nama}`;
+        playSound('success');
       } else {
         scanStatus = "error";
-        statusMessage = `Gagal: ${data.message}`;
+        statusMessage = `❌ Gagal: ${data.message}`;
+        playSound('error');
       }
     } catch (error) {
       scanStatus = "error";
-      statusMessage = "Gagal terhubung ke server.";
+      statusMessage = "❌ Gagal terhubung ke server.";
+      playSound('error');
     }
 
-    // Unblock after 3 seconds
+    // Unblock after 5 seconds
     setTimeout(() => {
       isScanningBlocked = false;
       scanStatus = "idle";
       statusMessage = "";
-    }, 3000);
+    }, 5000);
   }
 </script>
 
