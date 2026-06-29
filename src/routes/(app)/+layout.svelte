@@ -34,7 +34,7 @@
 
   <aside class="sidebar" class:closed={!isSidebarOpen}>
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 2rem;">
-      <a href="/dashboard" class="sidebar-brand" style="margin-bottom:0;">{isSidebarOpen ? 'Buku Kas Salon' : 'BK'}</a>
+      <a href="/dashboard" class="sidebar-brand" style="margin-bottom:0;">{isSidebarOpen ? 'Laina' : 'LN'}</a>
     </div>
 
     <nav>
@@ -96,6 +96,10 @@
   }
   .sidebar.closed {
     width: 80px;
+    padding: 1.5rem 0.5rem !important; /* Override the large padding from app.css */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
   .sidebar-toggle-btn {
     position: fixed;
@@ -134,14 +138,38 @@
     align-items: center;
     gap: 1rem;
   }
+  
+  .sidebar.closed .sidebar-menu {
+    padding: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .sidebar.closed .sidebar-item {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
   .sidebar.closed .sidebar-link {
     justify-content: center;
-    padding: 1rem 0;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    width: 3rem;
+    height: 3rem;
+    box-sizing: border-box;
   }
+  .sidebar.closed .sidebar-link:hover {
+    transform: translateY(-2px); /* Override translateX from app.css */
+  }
+  
   .sidebar.closed .sidebar-brand {
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     text-align: center;
     width: 100%;
+    margin-bottom: 2rem !important;
   }
 
   /* Make sure the toggle button adapts */
