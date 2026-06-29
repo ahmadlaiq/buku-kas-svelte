@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
-  import { Html5Qrcode } from "html5-qrcode";
+  import { onMount, onDestroy, tick } from "svelte";
 
   let scanner: Html5Qrcode;
   let action = $state<"add" | "reduce">("add");
@@ -27,11 +26,12 @@
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         latitude = position.coords.latitude;
         longitude = position.coords.longitude;
         isGeoLocked = false;
         isCheckingGeo = false;
+        await tick();
         initScanner();
       },
       (err) => {
@@ -51,20 +51,31 @@
 
   async function initScanner() {
     try {
-      scanner = new Html5Qrcode("reader");
-      await scanner.start(
-        { facingMode: "environment" },
-        { 
-          fps: 10, 
-          qrbox: { width: 250, height: 150 },
-          aspectRatio: 1.0
-        },
-        onScanSuccess,
-        undefined
-      );
-    } catch (err) {
+      const devices = await Html5Qrcode.getCameras();
+      if (devices && devices.length > 0) {
+        let cameraId = devices[0].id;
+        const backCamera = devices.find(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('environment'));
+        if (backCamera) {
+          cameraId = backCamera.id;
+        }
+
+        scanner = new Html5Qrcode("reader");
+        await scanner.start(
+          cameraId,
+          { 
+            fps: 10, 
+            qrbox: { width: 250, height: 150 },
+            aspectRatio: 1.0
+          },
+          onScanSuccess,
+          undefined
+        );
+      } else {
+        throw new Error("Tidak ada kamera yang terdeteksi di perangkat Anda.");
+      }
+    } catch (err: any) {
       isGeoLocked = true;
-      errorMessage = "Gagal mengakses kamera belakang. Harap pastikan izin kamera diberikan.";
+      errorMessage = "Gagal mengakses kamera: " + (err?.message || err);
       console.error(err);
     }
   }
