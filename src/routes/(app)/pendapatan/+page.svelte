@@ -403,7 +403,7 @@
     background: white;
     border-radius: var(--radius-xl);
     padding: var(--space-2xl);
-    max-width: 500px;
+    max-width: 800px;
     width: 90%;
     max-height: 90vh;
     overflow-y: auto;
