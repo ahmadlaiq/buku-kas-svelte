@@ -71,6 +71,7 @@ model Karyawan {
   nama       String
   no_hp      String?
   posisi     String?
+  is_aktif   Boolean  @default(true)
   created_at DateTime @default(now()) @map("created_at")
 
   @@map("karyawan")
@@ -81,6 +82,7 @@ model Customer {
   nama       String
   no_hp      String?
   alamat     String?
+  is_aktif   Boolean  @default(true)
   created_at DateTime @default(now()) @map("created_at")
 
   @@map("customer")
@@ -94,6 +96,7 @@ model MasterMaterial {
   harga      Float?   // Harga standar
   stock      Int      @default(0)
   barcode    String?  @unique
+  is_aktif   Boolean  @default(true)
   created_at DateTime @default(now()) @map("created_at")
   stock_logs StockLog[]
 
