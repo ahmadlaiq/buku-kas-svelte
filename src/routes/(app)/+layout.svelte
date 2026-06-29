@@ -34,7 +34,7 @@
 
   <aside class="sidebar" class:closed={!isSidebarOpen}>
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 2rem;">
-      <a href="/dashboard" class="sidebar-brand" style="margin-bottom:0;">{isSidebarOpen ? 'Laina' : 'LN'}</a>
+      <a href="/dashboard" class="sidebar-brand" style="margin-bottom:0;">{isSidebarOpen ? 'Salon Management System' : 'SMS'}</a>
     </div>
 
     <nav>
@@ -90,9 +90,12 @@
 <style>
   .sidebar {
     transition: width 0.3s ease;
-    width: 280px;
+    width: 320px;
+    /* padding: 1rem !important; */
+    flex-shrink: 0;
     position: relative;
     overflow-x: hidden;
+    /* box-sizing: border-box; */
   }
   .sidebar.closed {
     width: 80px;
