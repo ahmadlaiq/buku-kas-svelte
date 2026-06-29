@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { onMount, onDestroy, tick } from "svelte";
+  import { onMount, onDestroy } from "svelte";
+  import { Html5Qrcode } from "html5-qrcode";
 
   let scanner: Html5Qrcode;
   let action = $state<"add" | "reduce">("add");
@@ -26,12 +27,11 @@
     }
 
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
+      (position) => {
         latitude = position.coords.latitude;
         longitude = position.coords.longitude;
         isGeoLocked = false;
         isCheckingGeo = false;
-        await tick();
         initScanner();
       },
       (err) => {
