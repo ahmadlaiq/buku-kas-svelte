@@ -89,9 +89,9 @@
       </button>
     </form>
 
-    <div class="mt-lg text-center text-sm text-muted">
+    <!-- <div class="mt-lg text-center text-sm text-muted">
       <p>Default: username: <strong>admin</strong>, password: <strong>admin123</strong></p>
-    </div>
+    </div> -->
   </div>
 </div>
 

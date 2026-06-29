@@ -13,7 +13,7 @@
       if (userStr) {
         const user = JSON.parse(userStr);
         authStore.setUser(user);
-      } else if ($page.url.pathname !== '/login' && $page.url.pathname !== '/') {
+      } else if ($page.url.pathname !== '/login' && $page.url.pathname !== '/' && $page.url.pathname !== '/scan-barang') {
         goto('/login');
       }
     }
