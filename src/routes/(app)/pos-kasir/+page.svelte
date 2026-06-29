@@ -12,6 +12,17 @@
   let paymentMethod = 'CASH';
   let uangDiterima = 0;
   
+  // Custom Searchable Select State
+  let isCustomerDropdownOpen = false;
+  let customerSearch = '';
+  let searchableSelectRef: HTMLElement;
+  
+  function handleClickOutside(event: Event) {
+    if (searchableSelectRef && !searchableSelectRef.contains(event.target as Node)) {
+      isCustomerDropdownOpen = false;
+    }
+  }
+
   // Array of items in cart
   // { cartId, item_id, nama, type, price, qty, discount, karyawan_id }
   let cart: any[] = [];
@@ -20,6 +31,17 @@
   let checkoutResponse: any = null;
 
   // --- COMPUTED / DERIVED ---
+  $: filteredCustomers = data.customers.filter(c => c.nama.toLowerCase().includes(customerSearch.toLowerCase()));
+  $: selectedCustomerName = selectedCustomerId 
+    ? data.customers.find(c => c.id === selectedCustomerId)?.nama || 'Guest / Walk-in'
+    : 'Guest / Walk-in';
+
+  function selectCustomer(id: string) {
+    selectedCustomerId = id;
+    isCustomerDropdownOpen = false;
+    customerSearch = '';
+  }
+
   $: filteredItems = [...data.services, ...data.products].filter(item => {
     const matchTab = activeTab === 'SEMUA' || item.type === activeTab;
     const matchSearch = item.nama.toLowerCase().includes(searchQuery.toLowerCase());
@@ -147,6 +169,8 @@
   }
 </script>
 
+<svelte:window on:click={handleClickOutside} />
+
 <svelte:head>
   <title>POS Kasir - Buku Kas Salon</title>
 </svelte:head>
@@ -209,13 +233,50 @@
     </div>
 
     <div class="cart-customer">
-      <label for="customer">Pelanggan</label>
-      <select id="customer" bind:value={selectedCustomerId}>
-        <option value="">Guest / Walk-in</option>
-        {#each data.customers as c}
-          <option value={c.id}>{c.nama}</option>
-        {/each}
-      </select>
+      <label>Pelanggan</label>
+      
+      <!-- Custom Searchable Select -->
+      <div class="searchable-select" bind:this={searchableSelectRef}>
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <div class="select-header" on:click={() => isCustomerDropdownOpen = !isCustomerDropdownOpen}>
+          <span>{selectedCustomerName}</span>
+          <span class="chevron">{isCustomerDropdownOpen ? '▲' : '▼'}</span>
+        </div>
+        
+        {#if isCustomerDropdownOpen}
+          <div class="select-dropdown">
+            <input 
+              type="text" 
+              placeholder="Cari pelanggan..." 
+              bind:value={customerSearch}
+              class="dropdown-search"
+            />
+            <ul class="dropdown-list">
+              <!-- svelte-ignore a11y-click-events-have-key-events -->
+              <li 
+                class="dropdown-item" 
+                class:selected={selectedCustomerId === ''}
+                on:click={() => selectCustomer('')}
+              >
+                Guest / Walk-in
+              </li>
+              {#each filteredCustomers as c}
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <li 
+                  class="dropdown-item" 
+                  class:selected={selectedCustomerId === c.id}
+                  on:click={() => selectCustomer(c.id)}
+                >
+                  {c.nama}
+                </li>
+              {/each}
+              {#if filteredCustomers.length === 0}
+                <li class="dropdown-item empty">Tidak ditemukan</li>
+              {/if}
+            </ul>
+          </div>
+        {/if}
+      </div>
     </div>
 
     <div class="cart-items">
@@ -347,6 +408,7 @@
   .pos-container {
     display: flex;
     height: calc(100vh - 6rem);
+    min-height: 700px;
     overflow: hidden;
     background: white;
     border-radius: var(--radius-lg);
@@ -357,6 +419,7 @@
   /* LEFT PANEL */
   .items-panel {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     background-color: #f9fafb;
@@ -401,7 +464,7 @@
 
   .search-input {
     flex: 1;
-    min-width: 250px;
+    min-width: 200px;
     padding: 0.75rem 1rem;
     border: 1px solid #d1d5db;
     border-radius: 0.5rem;
@@ -419,6 +482,7 @@
     background: #f3f4f6;
     padding: 0.25rem;
     border-radius: 0.5rem;
+    flex-wrap: wrap;
   }
 
   .tab-btn {
@@ -430,6 +494,7 @@
     color: #6b7280;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap;
   }
   .tab-btn.active {
     background: white;
@@ -507,6 +572,8 @@
   /* RIGHT PANEL: CART */
   .cart-panel {
     width: 380px;
+    max-width: 45%;
+    flex-shrink: 0;
     background: white;
     display: flex;
     flex-direction: column;
@@ -516,22 +583,47 @@
   }
 
   .cart-header {
-    padding: 1.5rem;
+    padding: 1rem 1.25rem;
     border-bottom: 1px solid #e5e7eb;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
-  .cart-header h2 { margin: 0; font-size: 1.25rem; }
+  .cart-header h2 { margin: 0; font-size: 1.1rem; }
   .cart-header .badge { background: #3b82f6; color: white; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.8rem; font-weight: bold; }
 
   .cart-customer {
-    padding: 1rem 1.5rem;
+    padding: 0.75rem 1.25rem;
     border-bottom: 1px solid #e5e7eb;
     background: #f9fafb;
   }
-  .cart-customer label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; color: #4b5563; }
-  .cart-customer select { width: 100%; padding: 0.6rem; border: 1px solid #d1d5db; border-radius: 0.5rem; }
+  .cart-customer label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem; color: #4b5563; }
+  
+  /* SEARCHABLE SELECT */
+  .searchable-select {
+    position: relative;
+    width: 100%;
+  }
+  .select-header {
+    width: 100%; box-sizing: border-box; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-size: 0.9rem; background: white; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+  }
+  .select-dropdown {
+    position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px; background: white; border: 1px solid #d1d5db; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); z-index: 50; overflow: hidden;
+  }
+  .dropdown-search {
+    width: 100%; box-sizing: border-box; padding: 0.6rem; border: none; border-bottom: 1px solid #e5e7eb; outline: none; font-size: 0.85rem;
+  }
+  .dropdown-list {
+    list-style: none; margin: 0; padding: 0; max-height: 200px; overflow-y: auto;
+  }
+  .dropdown-item {
+    padding: 0.6rem 0.8rem; font-size: 0.85rem; cursor: pointer;
+  }
+  .dropdown-item:hover { background-color: #f3f4f6; }
+  .dropdown-item.selected { background-color: #eff6ff; color: #1d4ed8; font-weight: 600; }
+  .dropdown-item.empty { color: #9ca3af; text-align: center; cursor: default; }
+  .dropdown-item.empty:hover { background-color: white; }
+  .chevron { font-size: 0.7rem; color: #6b7280; }
 
   .cart-items {
     flex: 1;
@@ -584,13 +676,13 @@
     display: flex;
     gap: 0.5rem;
   }
-  .control-row > div { flex: 1; }
-  .control-row label { display: block; font-size: 0.75rem; color: #6b7280; margin-bottom: 0.2rem; }
+  .control-row > div { flex: 1; min-width: 0; }
+  .control-row label { display: block; font-size: 0.75rem; color: #6b7280; margin-bottom: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .control-row input { width: 100%; box-sizing: border-box; padding: 0.4rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.875rem; }
   .hidden { opacity: 0.5; pointer-events: none; }
 
   .stylist-control select {
-    width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.875rem; background: #f8fafc;
+    width: 100%; box-sizing: border-box; max-width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.875rem; background: #f8fafc; text-overflow: ellipsis;
   }
   .stylist-control select.error { border-color: #ef4444; background: #fef2f2; }
 
@@ -606,32 +698,33 @@
   .cart-summary {
     background: white;
     border-top: 1px solid #e5e7eb;
-    padding: 1.5rem;
+    padding: 1rem 1.25rem;
     box-shadow: 0 -4px 10px rgba(0,0,0,0.02);
   }
 
   .summary-row {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.35rem;
     color: #4b5563;
+    font-size: 0.9rem;
   }
   .summary-row.discount { color: #ef4444; }
   .summary-row.grand-total {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 800;
     color: #111827;
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
+    margin-top: 0.35rem;
+    padding-top: 0.35rem;
     border-top: 2px solid #e5e7eb;
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.75rem;
   }
 
-  .payment-section label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .payment-section label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem; }
   .payment-methods {
     display: flex;
     gap: 0.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
   }
   .pay-btn {
     flex: 1;
@@ -651,25 +744,25 @@
   }
 
   .cash-input-group {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
   }
   .cash-input {
-    width: 100%; box-sizing: border-box; padding: 0.75rem; font-size: 1.1rem; border: 2px solid #d1d5db; border-radius: 0.5rem; font-weight: bold;
+    width: 100%; box-sizing: border-box; padding: 0.5rem; font-size: 1rem; border: 2px solid #d1d5db; border-radius: 0.5rem; font-weight: bold;
   }
   .cash-input:focus { outline: none; border-color: #10b981; }
   .change-display {
-    margin-top: 0.5rem; font-weight: 600; color: #10b981; text-align: right; font-size: 1.1rem;
+    margin-top: 0.25rem; font-weight: 600; color: #10b981; text-align: right; font-size: 1rem;
   }
   .change-display.error { color: #ef4444; }
 
   .checkout-btn {
     width: 100%;
-    padding: 1rem;
+    padding: 0.75rem;
     background: #3b82f6;
     color: white;
     border: none;
     border-radius: 0.5rem;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: bold;
     cursor: pointer;
     transition: background 0.2s;
@@ -737,7 +830,7 @@
   /* RESPONSIVE TABLET */
   @media (max-width: 900px) {
     .pos-container { flex-direction: column; }
-    .cart-panel { width: 100%; height: 50vh; border-left: none; border-top: 1px solid #e5e7eb; }
+    .cart-panel { width: 100%; max-width: none; height: 50vh; border-left: none; border-top: 1px solid #e5e7eb; }
     .items-panel { height: 50vh; }
   }
 </style>
