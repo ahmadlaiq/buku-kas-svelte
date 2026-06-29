@@ -1,7 +1,4 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import { authStore } from '$lib/stores/auth';
-
   let username = $state('');
   let password = $state('');
   let error = $state('');
@@ -21,9 +18,8 @@
       const data = await response.json();
 
       if (response.ok) {
-        authStore.setUser(data.user);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        goto('/dashboard');
+        // Cookie is set by server, just redirect
+        window.location.href = '/dashboard';
       } else {
         error = data.error || 'Login gagal';
       }

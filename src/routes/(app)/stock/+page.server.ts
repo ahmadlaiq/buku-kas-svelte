@@ -2,10 +2,12 @@ import { prisma } from "$lib/server/prisma";
 import type { PageServerLoad, Actions } from "./$types";
 import { fail } from "@sveltejs/kit";
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
+  if (!locals.user) return { barangs: [], stockLogs: [] };
   const barangs = await prisma.masterMaterial.findMany({
     where: {
       jenis: "BARANG",
+      tenant_id: locals.user.tenant_id!
     },
     orderBy: {
       nama: "asc",
@@ -13,6 +15,7 @@ export const load: PageServerLoad = async () => {
   });
 
   const stockLogs = await prisma.stockLog.findMany({
+    where: { tenant_id: locals.user.tenant_id! },
     orderBy: {
       created_at: "desc",
     },
@@ -29,7 +32,8 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions: Actions = {
-  updateBarcode: async ({ request }) => {
+  updateBarcode: async ({ request, locals }) => {
+    if (!locals.user) return fail(401, { message: "Unauthorized" });
     const data = await request.formData();
     const id = Number(data.get("id"));
     const barcode = data.get("barcode")?.toString() || null;
@@ -40,7 +44,7 @@ export const actions: Actions = {
 
     try {
       await prisma.masterMaterial.update({
-        where: { id },
+        where: { id, tenant_id: locals.user.tenant_id! },
         data: { barcode },
       });
       return { success: true, message: "Barcode berhasil diupdate" };
@@ -48,7 +52,8 @@ export const actions: Actions = {
       return fail(500, { message: "Gagal mengupdate barcode" });
     }
   },
-  updateStock: async ({ request }) => {
+  updateStock: async ({ request, locals }) => {
+    if (!locals.user) return fail(401, { message: "Unauthorized" });
     const data = await request.formData();
     const id = Number(data.get("id"));
     const stock = Number(data.get("stock"));
@@ -58,7 +63,7 @@ export const actions: Actions = {
     }
 
     try {
-      const existing = await prisma.masterMaterial.findUnique({ where: { id } });
+      const existing = await prisma.masterMaterial.findUnique({ where: { id, tenant_id: locals.user.tenant_id! } });
       if (!existing) return fail(404, { message: "Barang tidak ditemukan" });
 
       const stockDiff = stock - existing.stock;
@@ -79,6 +84,8 @@ export const actions: Actions = {
             stok_sebelum: existing.stock,
             stok_sesudah: stock,
             keterangan: "Penyesuaian stok manual",
+            tenant_id: locals.user.tenant_id!,
+            user_id: locals.user.id
           }
         })
       ]);

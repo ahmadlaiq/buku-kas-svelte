@@ -2,13 +2,15 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { prisma } from '$lib/server/prisma';
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, locals }) => {
+  if (!locals.user) return { bebanPenyusutan: [], total: 0, filters: { startDate: '', endDate: '', sortBy: 'tanggal', sortOrder: 'desc' }, pagination: { page: 1, limit: 25, totalItems: 0, totalPages: 0 } };
+
   // Get filter parameters
   const startDate = url.searchParams.get('startDate');
   const endDate = url.searchParams.get('endDate');
   
   // Build where clause
-  const where: any = {};
+  const where: any = { tenant_id: locals.user.tenant_id };
   
   // Date range filter
   if (startDate || endDate) {
@@ -74,7 +76,8 @@ export const load: PageServerLoad = async ({ url }) => {
 };
 
 export const actions: Actions = {
-  create: async ({ request }) => {
+  create: async ({ request, locals }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
     const formData = await request.formData();
     const tanggal = formData.get('tanggal') as string;
     const nama_aset = formData.get('nama_aset') as string;
@@ -95,7 +98,9 @@ export const actions: Actions = {
           nama_aset,
           nilai_aset,
           umur_ekonomis,
-          nilai_penyusutan
+          nilai_penyusutan,
+          tenant_id: locals.user.tenant_id!,
+          user_id: locals.user.id
         }
       });
 
@@ -106,7 +111,8 @@ export const actions: Actions = {
     }
   },
 
-  update: async ({ request }) => {
+  update: async ({ request, locals }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
     const formData = await request.formData();
     const id = parseInt(formData.get('id') as string);
     const tanggal = formData.get('tanggal') as string;
@@ -123,7 +129,7 @@ export const actions: Actions = {
 
     try {
       await prisma.bebanPenyusutan.update({
-        where: { id },
+        where: { id, tenant_id: locals.user.tenant_id! },
         data: {
           tanggal: new Date(tanggal),
           nama_aset,
@@ -140,13 +146,14 @@ export const actions: Actions = {
     }
   },
 
-  delete: async ({ request }) => {
+  delete: async ({ request, locals }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
     const formData = await request.formData();
     const id = parseInt(formData.get('id') as string);
 
     try {
       await prisma.bebanPenyusutan.delete({
-        where: { id }
+        where: { id, tenant_id: locals.user.tenant_id! }
       });
       return { success: true };
     } catch (error) {

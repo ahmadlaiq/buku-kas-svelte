@@ -2,14 +2,16 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { prisma } from '$lib/server/prisma';
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, locals }) => {
+  if (!locals.user) return { pengeluaran: [], total: 0, filters: { startDate: '', endDate: '', kategori: 'all', sortBy: 'tanggal', sortOrder: 'desc' }, pagination: { page: 1, limit: 25, totalItems: 0, totalPages: 0 } };
+
   // Get filter parameters
   const startDate = url.searchParams.get('startDate');
   const endDate = url.searchParams.get('endDate');
   const kategori = url.searchParams.get('kategori');
   
   // Build where clause
-  const where: any = {};
+  const where: any = { tenant_id: locals.user.tenant_id };
   
   // Date range filter
   if (startDate || endDate) {
@@ -81,7 +83,8 @@ export const load: PageServerLoad = async ({ url }) => {
 };
 
 export const actions: Actions = {
-  create: async ({ request }) => {
+  create: async ({ request, locals }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
     const formData = await request.formData();
     const tanggal = formData.get('tanggal') as string;
     const kategori = formData.get('kategori') as string;
@@ -98,7 +101,9 @@ export const actions: Actions = {
           tanggal: new Date(tanggal),
           kategori,
           deskripsi: deskripsi || null,
-          jumlah
+          jumlah,
+          tenant_id: locals.user.tenant_id!,
+          user_id: locals.user.id
         }
       });
 
@@ -109,13 +114,14 @@ export const actions: Actions = {
     }
   },
 
-  delete: async ({ request }) => {
+  delete: async ({ request, locals }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
     const formData = await request.formData();
     const id = parseInt(formData.get('id') as string);
 
     try {
       await prisma.pengeluaran.delete({
-        where: { id }
+        where: { id, tenant_id: locals.user.tenant_id! }
       });
       return { success: true };
     } catch (error) {

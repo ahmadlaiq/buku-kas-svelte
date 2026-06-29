@@ -1,38 +1,18 @@
 <script lang="ts">
-  import { authStore } from "$lib/stores/auth";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
 
-  let { children } = $props();
+  let { data, children } = $props();
 
-  function handleLogout() {
-    authStore.logout();
-    localStorage.removeItem("user");
+  async function handleLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' });
     goto("/login");
   }
 
-  const menuItems = [
-    { path: "/dashboard", label: "Dashboard", icon: "📊" },
-    { path: "/pendapatan", label: "Pendapatan", icon: "💰" },
-    { path: "/pengeluaran", label: "Pengeluaran", icon: "💸" },
-    // { path: "/beban-operasional", label: "Beban Operasional", icon: "🏢" },
-    { path: "/beban-penyusutan", label: "Beban Penyusutan", icon: "📉" },
-    { path: "/laporan", label: "Laporan Laba & Rugi", icon: "📈" },
-    { path: "/master/karyawan", label: "Master Karyawan", icon: "👩‍💼" },
-    { path: "/master/customer", label: "Master Customer", icon: "🤝" },
-    {
-      label: "Master Material",
-      icon: "📦",
-      subItems: [
-        { path: "/master/jasa", label: "Master Jasa", icon: "💆" },
-        { path: "/master/barang", label: "Master Barang", icon: "🛍️" },
-      ]
-    },
-    { path: "/stock", label: "Stock Barang", icon: "📦" }
-  ];
+  const menuItems = data.menus || [];
 
   function isActive(path: string) {
-    return $page.url.pathname === path;
+    return $page.url.pathname === path || $page.url.pathname.startsWith(path + '/');
   }
 </script>
 
@@ -44,31 +24,14 @@
       <ul class="sidebar-menu">
         {#each menuItems as item}
           <li class="sidebar-item">
-            {#if item.subItems}
-              <div class="sidebar-link" style="cursor: default; font-weight: 600;">
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
-              </div>
-              <ul class="sidebar-submenu" style="margin-left: 2rem; list-style: none; padding: 0;">
-                {#each item.subItems as sub}
-                  <li class="sidebar-item" style="margin-top: 0.5rem;">
-                    <a href={sub.path} class="sidebar-link" class:active={isActive(sub.path)}>
-                      <span>{sub.icon}</span>
-                      <span>{sub.label}</span>
-                    </a>
-                  </li>
-                {/each}
-              </ul>
-            {:else}
-              <a
-                href={item.path}
-                class="sidebar-link"
-                class:active={isActive(item.path)}
-              >
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
-              </a>
-            {/if}
+            <a
+              href={item.path}
+              class="sidebar-link"
+              class:active={isActive(item.path)}
+            >
+              <span>{item.icon}</span>
+              <span>{item.nama}</span>
+            </a>
           </li>
         {/each}
       </ul>
@@ -79,9 +42,9 @@
     >
       <div class="card" style="padding: 1rem; margin-bottom: 1rem;">
         <div class="text-sm font-semibold mb-xs">
-          👤 {$authStore?.full_name || "User"}
+          👤 {data.user?.full_name || "User"}
         </div>
-        <div class="text-sm text-muted">@{$authStore?.username || "user"}</div>
+        <div class="text-sm text-muted">@{data.user?.username || "user"}</div>
       </div>
       <button
         onclick={handleLogout}

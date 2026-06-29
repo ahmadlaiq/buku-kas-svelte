@@ -11,12 +11,61 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Role {
+  id          Int      @id @default(autoincrement())
+  nama        String   @unique
+  deskripsi   String?
+  is_aktif    Boolean  @default(true)
+  created_at  DateTime @default(now()) @map("created_at")
+  users       User[]
+  role_menus  RoleMenu[]
+
+  @@map("roles")
+}
+
+model Tenant {
+  id         Int      @id @default(autoincrement())
+  nama       String   @unique
+  alamat     String?
+  no_hp      String?
+  email      String?
+  medsos     String?  // Contoh: "@irna.salon"
+  is_aktif   Boolean  @default(true)
+  created_at DateTime @default(now()) @map("created_at")
+  users      User[]
+
+  pendapatans       Pendapatan[]
+  pengeluarans      Pengeluaran[]
+  beban_ops         BebanOperasional[]
+  beban_penyusutans BebanPenyusutan[]
+  karyawans         Karyawan[]
+  customers         Customer[]
+  materials         MasterMaterial[]
+  stock_logs        StockLog[]
+
+  @@map("tenants")
+}
+
 model User {
   id         Int      @id @default(autoincrement())
   username   String   @unique
   password   String
   full_name  String   @map("full_name")
+  role_id    Int?     @map("role_id")
+  tenant_id  Int?     @map("tenant_id")
+  is_aktif   Boolean  @default(true)
+  role       Role?    @relation(fields: [role_id], references: [id])
+  tenant     Tenant?  @relation(fields: [tenant_id], references: [id])
   created_at DateTime @default(now()) @map("created_at")
+
+  pendapatans       Pendapatan[]
+  pengeluarans      Pengeluaran[]
+  beban_ops         BebanOperasional[]
+  beban_penyusutans BebanPenyusutan[]
+  karyawans         Karyawan[]
+  customers         Customer[]
+  materials         MasterMaterial[]
+  stock_logs        StockLog[]
 
   @@map("users")
 }
@@ -27,6 +76,10 @@ model Pendapatan {
   kategori   String
   deskripsi  String?
   jumlah     Float
+  tenant_id  Int      @map("tenant_id")
+  user_id    Int      @map("user_id")
+  tenant     Tenant   @relation(fields: [tenant_id], references: [id])
+  user       User     @relation(fields: [user_id], references: [id])
   created_at DateTime @default(now()) @map("created_at")
 
   @@map("pendapatan")
@@ -38,6 +91,10 @@ model Pengeluaran {
   kategori   String
   deskripsi  String?
   jumlah     Float
+  tenant_id  Int      @map("tenant_id")
+  user_id    Int      @map("user_id")
+  tenant     Tenant   @relation(fields: [tenant_id], references: [id])
+  user       User     @relation(fields: [user_id], references: [id])
   created_at DateTime @default(now()) @map("created_at")
 
   @@map("pengeluaran")
@@ -49,6 +106,10 @@ model BebanOperasional {
   kategori   String
   deskripsi  String?
   jumlah     Float
+  tenant_id  Int      @map("tenant_id")
+  user_id    Int      @map("user_id")
+  tenant     Tenant   @relation(fields: [tenant_id], references: [id])
+  user       User     @relation(fields: [user_id], references: [id])
   created_at DateTime @default(now()) @map("created_at")
 
   @@map("beban_operasional")
@@ -61,6 +122,10 @@ model BebanPenyusutan {
   nilai_aset       Float    @map("nilai_aset")
   umur_ekonomis    Int      @map("umur_ekonomis")
   nilai_penyusutan Float    @map("nilai_penyusutan")
+  tenant_id        Int      @map("tenant_id")
+  user_id          Int      @map("user_id")
+  tenant           Tenant   @relation(fields: [tenant_id], references: [id])
+  user             User     @relation(fields: [user_id], references: [id])
   created_at       DateTime @default(now()) @map("created_at")
 
   @@map("beban_penyusutan")
@@ -72,6 +137,10 @@ model Karyawan {
   no_hp      String?
   posisi     String?
   is_aktif   Boolean  @default(true)
+  tenant_id  Int      @map("tenant_id")
+  user_id    Int      @map("user_id")
+  tenant     Tenant   @relation(fields: [tenant_id], references: [id])
+  user       User     @relation(fields: [user_id], references: [id])
   created_at DateTime @default(now()) @map("created_at")
 
   @@map("karyawan")
@@ -83,6 +152,10 @@ model Customer {
   no_hp      String?
   alamat     String?
   is_aktif   Boolean  @default(true)
+  tenant_id  Int      @map("tenant_id")
+  user_id    Int      @map("user_id")
+  tenant     Tenant   @relation(fields: [tenant_id], references: [id])
+  user       User     @relation(fields: [user_id], references: [id])
   created_at DateTime @default(now()) @map("created_at")
 
   @@map("customer")
@@ -97,6 +170,10 @@ model MasterMaterial {
   stock      Int      @default(0)
   barcode    String?  @unique
   is_aktif   Boolean  @default(true)
+  tenant_id  Int      @map("tenant_id")
+  user_id    Int      @map("user_id")
+  tenant     Tenant   @relation(fields: [tenant_id], references: [id])
+  user       User     @relation(fields: [user_id], references: [id])
   created_at DateTime @default(now()) @map("created_at")
   stock_logs StockLog[]
 
@@ -114,7 +191,37 @@ model StockLog {
   keterangan     String?
   latitude       Float?
   longitude      Float?
+  tenant_id      Int            @map("tenant_id")
+  user_id        Int            @map("user_id")
+  tenant         Tenant         @relation(fields: [tenant_id], references: [id])
+  user           User           @relation(fields: [user_id], references: [id])
   created_at     DateTime       @default(now()) @map("created_at")
 
-  @@map("stock_log")
+  @@map("stock_logs")
+}
+
+model Menu {
+  id         Int        @id @default(autoincrement())
+  nama       String
+  path       String
+  icon       String?
+  urutan     Int        @default(0)
+  is_aktif   Boolean    @default(true)
+  created_at DateTime   @default(now()) @map("created_at")
+  role_menus RoleMenu[]
+
+  @@map("menus")
+}
+
+model RoleMenu {
+  id         Int      @id @default(autoincrement())
+  role_id    Int      @map("role_id")
+  menu_id    Int      @map("menu_id")
+  created_at DateTime @default(now()) @map("created_at")
+
+  role       Role     @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  menu       Menu     @relation(fields: [menu_id], references: [id], onDelete: Cascade)
+
+  @@unique([role_id, menu_id])
+  @@map("role_menus")
 }

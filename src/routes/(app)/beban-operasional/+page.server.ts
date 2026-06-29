@@ -2,7 +2,8 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { prisma } from '$lib/server/prisma';
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, locals }) => {
+  if (!locals.user) return { bebanOperasional: [], total: 0, selectedMonth: '', sortBy: 'tanggal', sortOrder: 'desc' };
   const month = url.searchParams.get('month') || new Date().toISOString().slice(0, 7);
   const startOfMonth = new Date(`${month}-01T00:00:00Z`);
   const endOfMonth = new Date(startOfMonth);
@@ -16,6 +17,7 @@ export const load: PageServerLoad = async ({ url }) => {
 
   const data = await prisma.bebanOperasional.findMany({
     where: {
+      tenant_id: locals.user.tenant_id,
       tanggal: {
         gte: startOfMonth,
         lt: endOfMonth
@@ -30,6 +32,7 @@ export const load: PageServerLoad = async ({ url }) => {
   const totalResult = await prisma.bebanOperasional.aggregate({
     _sum: { jumlah: true },
     where: {
+      tenant_id: locals.user.tenant_id,
       tanggal: {
         gte: startOfMonth,
         lt: endOfMonth
@@ -50,7 +53,8 @@ export const load: PageServerLoad = async ({ url }) => {
 };
 
 export const actions: Actions = {
-  create: async ({ request }) => {
+  create: async ({ request, locals }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
     const formData = await request.formData();
     const tanggal = formData.get('tanggal') as string;
     const kategori = formData.get('kategori') as string;
@@ -67,7 +71,9 @@ export const actions: Actions = {
           tanggal: new Date(tanggal),
           kategori,
           deskripsi: deskripsi || null,
-          jumlah
+          jumlah,
+          tenant_id: locals.user.tenant_id!,
+          user_id: locals.user.id
         }
       });
 
@@ -78,13 +84,14 @@ export const actions: Actions = {
     }
   },
 
-  delete: async ({ request }) => {
+  delete: async ({ request, locals }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
     const formData = await request.formData();
     const id = parseInt(formData.get('id') as string);
 
     try {
       await prisma.bebanOperasional.delete({
-        where: { id }
+        where: { id, tenant_id: locals.user.tenant_id! }
       });
       return { success: true };
     } catch (error) {

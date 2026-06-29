@@ -2,8 +2,12 @@ import { json } from "@sveltejs/kit";
 import { prisma } from "$lib/server/prisma";
 import type { RequestHandler } from "./$types";
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
   try {
+    if (!locals.user) {
+      return json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { barcode, action, qty = 1, latitude, longitude } = body;
 
@@ -22,7 +26,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
     // Cari barang berdasarkan barcode
     const barang = await prisma.masterMaterial.findUnique({
-      where: { barcode },
+      where: { barcode, tenant_id: locals.user.tenant_id! },
     });
 
     if (!barang) {
@@ -58,6 +62,8 @@ export const POST: RequestHandler = async ({ request }) => {
           latitude: latitude ? parseFloat(latitude) : null,
           longitude: longitude ? parseFloat(longitude) : null,
           keterangan: `Scan barcode via API`,
+          tenant_id: locals.user.tenant_id!,
+          user_id: locals.user.id
         }
       })
     ]);

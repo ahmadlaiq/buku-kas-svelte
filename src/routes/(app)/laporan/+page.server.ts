@@ -1,7 +1,8 @@
 import type { PageServerLoad } from './$types';
 import { prisma } from '$lib/server/prisma';
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, locals }) => {
+  if (!locals.user) return { selectedMonth: '', withPenyusutan: false, monthName: '', pendapatan: [], totalPendapatan: 0, pengeluaran: [], totalPengeluaran: 0, bebanPenyusutan: [], totalBebanPenyusutan: 0, totalBiaya: 0, labaKotor: 0, labaBersih: 0 };
   const month = url.searchParams.get('month') || new Date().toISOString().slice(0, 7);
   const withPenyusutan = url.searchParams.get('penyusutan') !== 'false';
   const startOfMonth = new Date(`${month}-01T00:00:00Z`);
@@ -13,6 +14,7 @@ export const load: PageServerLoad = async ({ url }) => {
     by: ['kategori'],
     _sum: { jumlah: true },
     where: {
+      tenant_id: locals.user.tenant_id!,
       tanggal: {
         gte: startOfMonth,
         lt: endOfMonth
@@ -33,6 +35,7 @@ export const load: PageServerLoad = async ({ url }) => {
   const totalPendapatanResult = await prisma.pendapatan.aggregate({
     _sum: { jumlah: true },
     where: {
+      tenant_id: locals.user.tenant_id!,
       tanggal: {
         gte: startOfMonth,
         lt: endOfMonth
@@ -46,6 +49,7 @@ export const load: PageServerLoad = async ({ url }) => {
     by: ['kategori'],
     _sum: { jumlah: true },
     where: {
+      tenant_id: locals.user.tenant_id!,
       tanggal: {
         gte: startOfMonth,
         lt: endOfMonth
@@ -66,6 +70,7 @@ export const load: PageServerLoad = async ({ url }) => {
   const totalPengeluaranResult = await prisma.pengeluaran.aggregate({
     _sum: { jumlah: true },
     where: {
+      tenant_id: locals.user.tenant_id!,
       tanggal: {
         gte: startOfMonth,
         lt: endOfMonth
@@ -116,6 +121,7 @@ export const load: PageServerLoad = async ({ url }) => {
   if (withPenyusutan) {
     const bebanPenyusutanData = await prisma.bebanPenyusutan.findMany({
       where: {
+        tenant_id: locals.user.tenant_id!,
         tanggal: {
           gte: startOfMonth,
           lt: endOfMonth
@@ -138,6 +144,7 @@ export const load: PageServerLoad = async ({ url }) => {
     const totalBebanPenyusutanResult = await prisma.bebanPenyusutan.aggregate({
       _sum: { nilai_penyusutan: true },
       where: {
+        tenant_id: locals.user.tenant_id!,
         tanggal: {
           gte: startOfMonth,
           lt: endOfMonth
