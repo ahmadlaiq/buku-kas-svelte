@@ -1,35 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import type { PageData } from './$types';
   
-  // --- MOCK DATA ---
-  const MOCK_SERVICES = [
-    { id: 'S1', nama: 'Potong Rambut Pria', price: 50000, type: 'JASA' },
-    { id: 'S2', nama: 'Potong Rambut Wanita', price: 75000, type: 'JASA' },
-    { id: 'S3', nama: 'Creambath', price: 120000, type: 'JASA' },
-    { id: 'S4', nama: 'Coloring Basic', price: 250000, type: 'JASA' },
-    { id: 'S5', nama: 'Smoothing', price: 350000, type: 'JASA' },
-    { id: 'S6', nama: 'Hair Spa', price: 150000, type: 'JASA' }
-  ];
-
-  const MOCK_PRODUCTS = [
-    { id: 'P1', nama: 'Pomade Water Based', price: 85000, stock: 12, type: 'PRODUCT' },
-    { id: 'P2', nama: 'Hair Tonic Ginseng', price: 65000, stock: 8, type: 'PRODUCT' },
-    { id: 'P3', nama: 'Shampoo Anti Dandruff', price: 45000, stock: 20, type: 'PRODUCT' },
-    { id: 'P4', nama: 'Hair Serum', price: 110000, stock: 5, type: 'PRODUCT' }
-  ];
-
-  const MOCK_CUSTOMERS = [
-    { id: 'C1', nama: 'Budi Santoso' },
-    { id: 'C2', nama: 'Siti Aminah' },
-    { id: 'C3', nama: 'Andi Wijaya' },
-    { id: 'C4', nama: 'Rina Melati' }
-  ];
-
-  const MOCK_EMPLOYEES = [
-    { id: 'E1', nama: 'Dimas (Stylist 1)' },
-    { id: 'E2', nama: 'Ayu (Stylist 2)' },
-    { id: 'E3', nama: 'Reza (Stylist 3)' }
-  ];
+  export let data: PageData;
 
   // --- STATE ---
   let activeTab = 'SEMUA'; // SEMUA, JASA, PRODUCT
@@ -47,7 +20,7 @@
   let checkoutResponse: any = null;
 
   // --- COMPUTED / DERIVED ---
-  $: filteredItems = [...MOCK_SERVICES, ...MOCK_PRODUCTS].filter(item => {
+  $: filteredItems = [...data.services, ...data.products].filter(item => {
     const matchTab = activeTab === 'SEMUA' || item.type === activeTab;
     const matchSearch = item.nama.toLowerCase().includes(searchQuery.toLowerCase());
     return matchTab && matchSearch;
@@ -133,11 +106,35 @@
       }))
     };
 
-    console.log("SENDING API PAYLOAD:", JSON.stringify(payload, null, 2));
-
-    // Simulate API Call
-    isCheckoutSuccess = true;
-    checkoutResponse = payload;
+    try {
+      const res = await fetch('/api/pos/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      const result = await res.json();
+      
+      if (!res.ok) {
+        alert(result.error || 'Terjadi kesalahan saat checkout');
+        return;
+      }
+      
+      // Update local stock for products so user doesn't have to refresh immediately
+      for (const cartItem of cart) {
+        if (cartItem.type === 'PRODUCT') {
+          const productIdx = data.products.findIndex(p => p.id === cartItem.item_id);
+          if (productIdx !== -1) {
+            data.products[productIdx].stock -= cartItem.qty;
+          }
+        }
+      }
+      
+      isCheckoutSuccess = true;
+      checkoutResponse = result.data || payload;
+    } catch (error) {
+      alert('Gagal menghubungi server API');
+    }
   }
 
   function resetTransaction() {
@@ -159,7 +156,6 @@
   <div class="items-panel">
     <div class="header">
       <div class="header-title">
-        <a href="/dashboard" class="back-btn">⬅</a>
         <h1 style="margin:0; font-size: 1.5rem;">Point of Sale</h1>
       </div>
       
@@ -216,7 +212,7 @@
       <label for="customer">Pelanggan</label>
       <select id="customer" bind:value={selectedCustomerId}>
         <option value="">Guest / Walk-in</option>
-        {#each MOCK_CUSTOMERS as c}
+        {#each data.customers as c}
           <option value={c.id}>{c.nama}</option>
         {/each}
       </select>
@@ -255,7 +251,7 @@
               <div class="stylist-control">
                 <select bind:value={c.karyawan_id} class:error={!c.karyawan_id}>
                   <option value="" disabled selected>Pilih Stylist / Karyawan</option>
-                  {#each MOCK_EMPLOYEES as emp}
+                  {#each data.employees as emp}
                     <option value={emp.id}>{emp.nama}</option>
                   {/each}
                 </select>

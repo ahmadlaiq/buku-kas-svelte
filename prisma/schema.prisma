@@ -82,7 +82,26 @@ model Pendapatan {
   user       User     @relation(fields: [user_id], references: [id])
   created_at DateTime @default(now()) @map("created_at")
 
+  details    PendapatanDetail[]
+
   @@map("pendapatan")
+}
+
+model PendapatanDetail {
+  id             Int            @id @default(autoincrement())
+  pendapatan_id  Int            @map("pendapatan_id")
+  material_id    Int            @map("material_id")
+  karyawan_id    Int?           @map("karyawan_id")
+  qty            Int
+  harga_satuan   Float          @map("harga_satuan")
+  subtotal       Float
+  created_at     DateTime       @default(now()) @map("created_at")
+
+  pendapatan     Pendapatan     @relation(fields: [pendapatan_id], references: [id], onDelete: Cascade)
+  material       MasterMaterial @relation(fields: [material_id], references: [id])
+  karyawan       Karyawan?      @relation(fields: [karyawan_id], references: [id])
+
+  @@map("pendapatan_detail")
 }
 
 model Pengeluaran {
@@ -143,6 +162,8 @@ model Karyawan {
   user       User     @relation(fields: [user_id], references: [id])
   created_at DateTime @default(now()) @map("created_at")
 
+  pendapatan_details PendapatanDetail[]
+
   @@map("karyawan")
 }
 
@@ -176,6 +197,7 @@ model MasterMaterial {
   user       User     @relation(fields: [user_id], references: [id])
   created_at DateTime @default(now()) @map("created_at")
   stock_logs StockLog[]
+  pendapatan_details PendapatanDetail[]
 
   @@map("master_material")
 }

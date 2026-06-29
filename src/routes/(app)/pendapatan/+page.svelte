@@ -7,13 +7,7 @@
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
   let showModal = $state(false);
-  let formData = $state({
-    tanggal: new Date().toISOString().split("T")[0],
-    kategori: "",
-    deskripsi: "",
-    jumlah: "",
-  });
-  let displayJumlah = $state("");
+  let selectedDetail: any = $state(null);
 
   const kategoriGroups = [
     {
@@ -46,22 +40,9 @@
     });
   }
 
-  function handleOpenModal() {
-    formData = {
-      tanggal: new Date().toISOString().split("T")[0],
-      kategori: "",
-      deskripsi: "",
-      jumlah: "",
-    };
-    displayJumlah = "";
+  function handleOpenModal(detailData: any) {
+    selectedDetail = detailData;
     showModal = true;
-  }
-
-  function handleJumlahInput(e: Event) {
-    const input = e.target as HTMLInputElement;
-    const formatted = formatNumber(input.value);
-    displayJumlah = formatted;
-    formData.jumlah = parseFormattedNumber(formatted);
   }
 
   function applyFilters() {
@@ -110,11 +91,8 @@
   <div class="flex justify-between items-center mb-2xl">
     <div>
       <h1 class="mb-sm">💰 Pendapatan</h1>
-      <p class="text-muted">Kelola data pendapatan salon Anda</p>
+      <p class="text-muted">Kelola dan lihat rincian pendapatan salon Anda</p>
     </div>
-    <button onclick={handleOpenModal} class="btn btn-success">
-      ➕ Tambah Pendapatan
-    </button>
   </div>
 
   <!-- Filter & Stats -->
@@ -228,29 +206,38 @@
                   {formatCurrency(item.jumlah)}
                 </td>
                 <td style="text-align: center;">
-                  <form
-                    method="POST"
-                    action="?/delete"
-                    use:enhance={() => {
-                      return async ({ update }) => {
-                        await update();
-                        invalidateAll();
-                      };
-                    }}
-                  >
-                    <input type="hidden" name="id" value={item.id} />
+                  <div class="flex gap-sm justify-center">
                     <button
-                      type="submit"
-                      class="btn btn-danger btn-sm"
-                      onclick={(e) => {
-                        if (!confirm("Yakin ingin menghapus data ini?")) {
-                          e.preventDefault();
-                        }
+                      type="button"
+                      class="btn btn-secondary btn-sm"
+                      onclick={() => handleOpenModal(item)}
+                    >
+                      📄 Detail
+                    </button>
+                    <form
+                      method="POST"
+                      action="?/delete"
+                      use:enhance={() => {
+                        return async ({ update }) => {
+                          await update();
+                          invalidateAll();
+                        };
                       }}
                     >
-                      🗑️ Hapus
-                    </button>
-                  </form>
+                      <input type="hidden" name="id" value={item.id} />
+                      <button
+                        type="submit"
+                        class="btn btn-danger btn-sm"
+                        onclick={(e) => {
+                          if (!confirm("Yakin ingin menghapus data ini?")) {
+                            e.preventDefault();
+                          }
+                        }}
+                      >
+                        🗑️
+                      </button>
+                    </form>
+                  </div>
                 </td>
               </tr>
             {/each}
@@ -306,97 +293,67 @@
   <div class="modal-overlay" onclick={() => (showModal = false)}>
     <div class="modal-content" onclick={(e) => e.stopPropagation()}>
       <div class="modal-header">
-        <h2>➕ Tambah Pendapatan</h2>
+        <h2>📄 Detail Transaksi</h2>
         <button onclick={() => (showModal = false)} class="modal-close"
           >✕</button
         >
       </div>
 
-      <form
-        method="POST"
-        action="?/create"
-        use:enhance={() => {
-          return async ({ result, update }) => {
-            await update();
-            if (result.type === "success") {
-              showModal = false;
-              invalidateAll();
-            }
-          };
-        }}
-      >
-        <div class="form-group">
-          <label for="tanggal" class="form-label">Tanggal</label>
-          <input
-            id="tanggal"
-            name="tanggal"
-            type="date"
-            class="form-input"
-            bind:value={formData.tanggal}
-            required
-          />
+      {#if selectedDetail}
+        <div class="mb-md">
+          <p><strong>Tanggal:</strong> {formatDate(selectedDetail.tanggal)}</p>
+          <p><strong>Kategori:</strong> <span class="badge badge-primary">{selectedDetail.kategori}</span></p>
+          <p><strong>Total:</strong> <span class="font-bold text-success">{formatCurrency(selectedDetail.jumlah)}</span></p>
+          <p><strong>Keterangan:</strong> {selectedDetail.deskripsi}</p>
         </div>
 
-        <div class="form-group">
-          <label for="kategori" class="form-label">Kategori</label>
-          <select
-            id="kategori"
-            name="kategori"
-            class="form-select"
-            bind:value={formData.kategori}
-            required
-          >
-            <option value="">Pilih Kategori</option>
-            {#each kategoriGroups as group}
-              <optgroup label={group.label}>
-                {#each group.options as kategori}
-                  <option value={kategori}>{kategori}</option>
+        {#if selectedDetail.details && selectedDetail.details.length > 0}
+          <h4 class="mb-sm">Rincian Item</h4>
+          <div class="table-container mb-md">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Qty</th>
+                  <th>Harga</th>
+                  <th>Subtotal</th>
+                  <th>Stylist</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each selectedDetail.details as d}
+                  <tr>
+                    <td>{d.material?.nama || 'Unknown'}</td>
+                    <td>{d.qty}</td>
+                    <td>{formatCurrency(d.harga_satuan)}</td>
+                    <td class="font-semibold">{formatCurrency(d.subtotal)}</td>
+                    <td>
+                      {#if d.karyawan}
+                        <span class="badge" style="background:var(--neutral-100);">{d.karyawan.nama}</span>
+                      {:else}
+                        -
+                      {/if}
+                    </td>
+                  </tr>
                 {/each}
-              </optgroup>
-            {/each}
-          </select>
-        </div>
+              </tbody>
+            </table>
+          </div>
+        {:else}
+          <p class="text-muted text-center" style="padding: 1rem 0;">Belum ada rincian item (data lama).</p>
+        {/if}
 
-        <div class="form-group">
-          <label for="deskripsi" class="form-label">Deskripsi (Opsional)</label>
-          <textarea
-            id="deskripsi"
-            name="deskripsi"
-            class="form-textarea"
-            bind:value={formData.deskripsi}
-            placeholder="Deskripsi detail..."
-          ></textarea>
-        </div>
-
-        <div class="form-group">
-          <label for="jumlah" class="form-label">Jumlah (Rp)</label>
-          <input
-            id="jumlah-display"
-            type="text"
-            inputmode="numeric"
-            class="form-input"
-            value={displayJumlah}
-            oninput={handleJumlahInput}
-            placeholder="10.000"
-            required
-          />
-          <input type="hidden" name="jumlah" value={formData.jumlah} />
-        </div>
-
-        <div class="flex gap-md">
-          <button type="submit" class="btn btn-success" style="flex: 1;">
-            💾 Simpan
-          </button>
+        <div class="flex justify-center mt-lg">
           <button
             type="button"
             onclick={() => (showModal = false)}
             class="btn btn-secondary"
-            style="flex: 1;"
+            style="min-width: 120px;"
           >
-            ✕ Batal
+            Tutup
           </button>
         </div>
-      </form>
+      {/if}
     </div>
   </div>
 {/if}

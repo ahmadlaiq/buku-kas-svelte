@@ -50,7 +50,15 @@ export const load: PageServerLoad = async ({ url, locals }) => {
         { created_at: 'desc' }
       ],
       take: limit,
-      skip
+      skip,
+      include: {
+        details: {
+          include: {
+            material: true,
+            karyawan: true
+          }
+        }
+      }
     }),
     prisma.pendapatan.count({ where })
   ]);
@@ -83,36 +91,6 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 };
 
 export const actions: Actions = {
-  create: async ({ request, locals }) => {
-    if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const formData = await request.formData();
-    const tanggal = formData.get('tanggal') as string;
-    const kategori = formData.get('kategori') as string;
-    const deskripsi = formData.get('deskripsi') as string;
-    const jumlah = parseFloat(formData.get('jumlah') as string);
-
-    if (!tanggal || !kategori || !jumlah || jumlah <= 0) {
-      return fail(400, { error: 'Data tidak valid' });
-    }
-
-    try {
-      await prisma.pendapatan.create({
-        data: {
-          tanggal: new Date(tanggal),
-          kategori,
-          deskripsi: deskripsi || null,
-          jumlah,
-          tenant_id: locals.user.tenant_id!,
-          user_id: locals.user.id
-        }
-      });
-
-      return { success: true };
-    } catch (error) {
-      console.error('Create pendapatan error:', error);
-      return fail(500, { error: 'Gagal menyimpan data' });
-    }
-  },
 
   delete: async ({ request, locals }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
