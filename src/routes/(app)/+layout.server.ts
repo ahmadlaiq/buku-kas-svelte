@@ -16,7 +16,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
         include: { menu: true }
       });
       
-      menus = roleMenus.map(rm => rm.menu).filter(m => m.is_aktif).sort((a, b) => a.urutan - b.urutan);
+      menus = roleMenus.map((rm: any) => rm.menu).filter((m: any) => m.is_aktif).sort((a: any, b: any) => a.urutan - b.urutan);
     }
   }
 

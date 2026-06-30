@@ -55,7 +55,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   });
 
   return {
-    bebanPenyusutan: data.map(p => ({
+    bebanPenyusutan: data.map((p: any) => ({
       ...p,
       tanggal: p.tanggal.toISOString().split('T')[0]
     })),

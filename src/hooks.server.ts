@@ -37,7 +37,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
       // Cari apakah ada menu yang me-match pathname ini
       // Misalnya pathname `/master/karyawan` akan match dengan menu.path `/master/karyawan`
-      const isAllowed = allowedMenus.some(rm => pathname === rm.menu.path || pathname.startsWith(rm.menu.path + '/'));
+      const isAllowed = allowedMenus.some((rm: any) => pathname === rm.menu.path || pathname.startsWith(rm.menu.path + '/'));
 
       if (!isAllowed) {
         // Redirect to a safe page or show forbidden

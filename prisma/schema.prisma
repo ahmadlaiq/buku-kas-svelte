@@ -31,6 +31,10 @@ model Tenant {
   email      String?
   medsos     String?  // Contoh: "@irna.salon"
   is_aktif   Boolean  @default(true)
+  status     String   @default("ACTIVE") // PENDING, ACTIVE, SUSPENDED
+  expired_at DateTime?
+  bukti_transfer String?
+  paket      String   @default("BASIC") // BASIC, PRO, ENTERPRISE
   created_at DateTime @default(now()) @map("created_at")
   users      User[]
 

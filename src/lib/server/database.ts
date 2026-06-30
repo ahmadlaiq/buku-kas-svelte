@@ -1,4 +1,4 @@
-import prisma from './prisma';
+import { prisma } from './prisma';
 import { hashSync } from 'bcryptjs';
 
 // Initialize database with default user if not exists

@@ -41,7 +41,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   });
 
   return {
-    bebanOperasional: data.map(p => ({
+    bebanOperasional: data.map((p: any) => ({
       ...p,
       tanggal: p.tanggal.toISOString().split('T')[0]
     })),

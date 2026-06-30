@@ -52,3 +52,9 @@ Thumbs.db
 .turbo
 
 /../generated/prisma
+
+# Uploads
+static/uploads
+
+# Netlify Generated
+.netlify
