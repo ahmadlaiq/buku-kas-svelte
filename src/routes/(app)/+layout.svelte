@@ -33,11 +33,11 @@
   </button>
 
   <aside class="sidebar" class:closed={!isSidebarOpen}>
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 2rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 2rem; flex-shrink: 0;">
       <a href="/dashboard" class="sidebar-brand" style="margin-bottom:0;">{isSidebarOpen ? 'Salon Management System' : 'SMS'}</a>
     </div>
 
-    <nav>
+    <nav style="flex: 1; overflow-y: auto; overflow-x: hidden; margin-right: -0.5rem; padding-right: 0.5rem;">
       <ul class="sidebar-menu">
         {#each menuItems as item}
           <li class="sidebar-item">
@@ -90,12 +90,17 @@
 <style>
   .sidebar {
     transition: width 0.3s ease;
-    width: 320px;
-    /* padding: 1rem !important; */
+    width: 280px;
     flex-shrink: 0;
-    position: relative;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
     overflow-x: hidden;
-    /* box-sizing: border-box; */
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 1.5rem; /* Ensure standard padding */
   }
   .sidebar.closed {
     width: 80px;
