@@ -9,13 +9,23 @@
     goto("/login");
   }
 
-  const menuItems = data.menus || [];
+  const menuItems = $derived(data.menus || []);
+  const mainItems = $derived(menuItems.filter((m: any) => !m.path.startsWith('/master')));
+  const masterItems = $derived(menuItems.filter((m: any) => m.path.startsWith('/master')));
+  
+  let isSidebarOpen = $state(true);
+  let isMasterMenuOpen = $state(false);
+
+  $effect(() => {
+    // Automatically open master submenu if current page is inside master
+    if ($page.url.pathname.startsWith('/master') && !isMasterMenuOpen) {
+      isMasterMenuOpen = true;
+    }
+  });
 
   function isActive(path: string) {
     return $page.url.pathname === path || $page.url.pathname.startsWith(path + '/');
   }
-  let isSidebarOpen = $state(true);
-
   function toggleSidebar() {
     isSidebarOpen = !isSidebarOpen;
   }
@@ -39,7 +49,7 @@
 
     <nav style="flex: 1; overflow-y: auto; overflow-x: hidden; margin-right: -0.5rem; padding-right: 0.5rem;">
       <ul class="sidebar-menu">
-        {#each menuItems as item}
+        {#each mainItems as item}
           <li class="sidebar-item">
             <a
               href={item.path}
@@ -54,6 +64,52 @@
             </a>
           </li>
         {/each}
+
+        {#if masterItems.length > 0}
+          <li class="sidebar-item">
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div
+              class="sidebar-link"
+              class:active={$page.url.pathname.startsWith('/master')}
+              title="Master Data"
+              onclick={() => {
+                isMasterMenuOpen = !isMasterMenuOpen;
+                if (!isSidebarOpen) isSidebarOpen = true;
+              }}
+              style="cursor: pointer; justify-content: space-between;"
+            >
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                <span class="icon">📁</span>
+                {#if isSidebarOpen}
+                  <span class="text">Master Data</span>
+                {/if}
+              </div>
+              {#if isSidebarOpen}
+                <span style="font-size: 0.75rem; transition: transform 0.2s; transform: {isMasterMenuOpen ? 'rotate(180deg)' : 'rotate(0)'}">▼</span>
+              {/if}
+            </div>
+
+            {#if isMasterMenuOpen && isSidebarOpen}
+              <ul class="sidebar-submenu" style="padding-left: 1rem; margin-top: 0.25rem;">
+                {#each masterItems as item}
+                  <li class="sidebar-item" style="margin-bottom: 0.25rem;">
+                    <a
+                      href={item.path}
+                      class="sidebar-link"
+                      class:active={isActive(item.path)}
+                      title={item.nama}
+                      style="padding: 0.5rem 1rem; font-size: 0.9rem;"
+                    >
+                      <span class="icon" style="font-size: 1rem;">{item.icon}</span>
+                      <span class="text">{item.nama.replace('Master ', '')}</span>
+                    </a>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
+          </li>
+        {/if}
       </ul>
     </nav>
 
