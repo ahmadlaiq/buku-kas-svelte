@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma';
+import { logActivity } from '$lib/server/logger';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ url, locals }) => {
@@ -60,7 +61,7 @@ export const actions: Actions = {
     const data = await request.formData();
     const nama = data.get('nama') as string;
     const kategori = data.get('kategori') as string;
-    const harga = parseFloat(data.get('harga') as string) || 0;
+    const harga = data.get('harga') ? Number(data.get('harga')) : null;
     const barcode = data.get('barcode') as string;
 
     if (!nama) return fail(400, { error: 'Nama barang harus diisi' });
@@ -73,13 +74,17 @@ export const actions: Actions = {
           kategori: kategori || null, 
           harga, 
           barcode: barcode || null,
-          ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}),
+          tenant_id: locals.user.tenant_id!,
           user_id: locals.user.id
         }
       });
+      await logActivity(locals.user.tenant_id!, locals.user.id, 'CREATE', 'Barang', `Menambahkan barang: ${nama}`);
       return { success: true };
     } catch (error: any) {
-      if (error.code === 'P2002') return fail(400, { error: 'Nama atau barcode barang sudah ada' });
+      if (error.code === 'P2002') {
+        const target = error.meta?.target?.[0] || 'Field';
+        return fail(400, { error: `${target} sudah digunakan` });
+      }
       return fail(500, { error: 'Gagal menambahkan barang' });
     }
   },
@@ -90,10 +95,10 @@ export const actions: Actions = {
     const id = Number(data.get('id'));
     const nama = data.get('nama') as string;
     const kategori = data.get('kategori') as string;
-    const harga = parseFloat(data.get('harga') as string) || 0;
+    const harga = data.get('harga') ? Number(data.get('harga')) : null;
     const barcode = data.get('barcode') as string;
 
-    if (!id || !nama) return fail(400, { error: 'Data tidak valid' });
+    if (!id || !nama) return fail(400, { error: 'ID dan Nama barang harus diisi' });
 
     try {
       await prisma.masterMaterial.update({
@@ -130,14 +135,18 @@ export const actions: Actions = {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
     const data = await request.formData();
     const id = Number(data.get('id'));
-
     if (!id) return fail(400, { error: 'ID tidak valid' });
 
     try {
+      const barang = await prisma.masterMaterial.findUnique({ where: { id } });
       await prisma.masterMaterial.delete({ where: { id, ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) } });
+      if (barang) {
+        await logActivity(locals.user.tenant_id!, locals.user.id, 'DELETE', 'Barang', `Menghapus barang: ${barang.nama}`);
+      }
       return { success: true };
     } catch (error) {
+      console.error('Error deleting barang:', error);
       return fail(500, { error: 'Gagal menghapus barang' });
     }
-  }
+  },
 };

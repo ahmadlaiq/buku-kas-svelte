@@ -131,6 +131,7 @@
                 {#if openDropdown === item.id}
                   <div class="dropdown-menu show" on:click|stopPropagation>
                     <button class="dropdown-item" on:click={() => { openDetail(item); openDropdown = null; }}>Detail</button>
+                    <button class="dropdown-item" on:click={() => { window.location.href = `/master/tenant/${item.id}/activity-log`; openDropdown = null; }}>Activity Log</button>
                     {#if isSuperAdmin}
                       <button class="dropdown-item text-success" on:click={() => { openVerifyModal(item); openDropdown = null; }}>Bayar / Perpanjang</button>
                     {/if}

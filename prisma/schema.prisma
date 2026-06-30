@@ -46,8 +46,36 @@ model Tenant {
   customers         Customer[]
   materials         MasterMaterial[]
   stock_logs        StockLog[]
+  payments          TenantPayment[]
+  activity_logs     ActivityLog[]
 
   @@map("tenants")
+}
+
+model TenantPayment {
+  id                Int      @id @default(autoincrement())
+  tenant_id         Int
+  tenant            Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  bukti_transfer    String?
+  jumlah_bulan      Int
+  status            String   @default("APPROVED")
+  created_at        DateTime @default(now()) @map("created_at")
+
+  @@map("tenant_payments")
+}
+
+model ActivityLog {
+  id          Int      @id @default(autoincrement())
+  tenant_id   Int
+  tenant      Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  user_id     Int?
+  user        User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  action      String   // "CREATE", "UPDATE", "DELETE"
+  entity      String   // "Master Material", "Pendapatan", dll
+  details     String?  
+  created_at  DateTime @default(now()) @map("created_at")
+
+  @@map("activity_logs")
 }
 
 model User {
@@ -70,6 +98,7 @@ model User {
   customers         Customer[]
   materials         MasterMaterial[]
   stock_logs        StockLog[]
+  activity_logs     ActivityLog[]
 
   @@map("users")
 }

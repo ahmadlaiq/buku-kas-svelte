@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma';
+import { logActivity } from '$lib/server/logger';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ url, locals }) => {
@@ -74,6 +75,7 @@ export const actions: Actions = {
           user_id: locals.user.id
         }
       });
+      await logActivity(locals.user.tenant_id!, locals.user.id, 'CREATE', 'Karyawan', `Menambahkan karyawan: ${nama}`);
       return { success: true };
     } catch (error) {
       console.error('Error creating karyawan:', error);
@@ -89,17 +91,22 @@ export const actions: Actions = {
     const no_hp = data.get('no_hp') as string;
     const posisi = data.get('posisi') as string;
 
-    if (!id || !nama) return fail(400, { error: 'Data tidak valid' });
+    if (!id || !nama) return fail(400, { error: 'ID dan Nama karyawan harus diisi' });
 
     try {
       await prisma.karyawan.update({
         where: { id, ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) },
-        data: { nama, no_hp: no_hp || null, posisi: posisi || null }
+        data: { 
+          nama, 
+          no_hp: no_hp || null, 
+          posisi: posisi || null 
+        }
       });
+      await logActivity(locals.user.tenant_id!, locals.user.id, 'UPDATE', 'Karyawan', `Mengedit karyawan: ${nama}`);
       return { success: true };
     } catch (error) {
       console.error('Error updating karyawan:', error);
-      return fail(500, { error: 'Gagal memperbarui karyawan' });
+      return fail(500, { error: 'Gagal mengubah karyawan' });
     }
   },
 
