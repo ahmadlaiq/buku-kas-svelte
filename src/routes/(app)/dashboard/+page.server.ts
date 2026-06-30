@@ -12,11 +12,13 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   const endOfMonth = new Date(startOfMonth);
   endOfMonth.setMonth(endOfMonth.getMonth() + 1);
 
+  const tenantFilter = locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {};
+
   // Total Pendapatan
   const totalPendapatanResult = await prisma.pendapatan.aggregate({
     _sum: { jumlah: true },
     where: {
-      tenant_id: locals.user.tenant_id!,
+      ...tenantFilter,
       tanggal: {
         gte: startOfMonth,
         lt: endOfMonth
@@ -29,7 +31,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   const totalPengeluaranResult = await prisma.pengeluaran.aggregate({
     _sum: { jumlah: true },
     where: {
-      tenant_id: locals.user.tenant_id!,
+      ...tenantFilter,
       tanggal: {
         gte: startOfMonth,
         lt: endOfMonth
@@ -42,7 +44,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   const totalBebanOperasionalResult = await prisma.bebanOperasional.aggregate({
     _sum: { jumlah: true },
     where: {
-      tenant_id: locals.user.tenant_id!,
+      ...tenantFilter,
       tanggal: {
         gte: startOfMonth,
         lt: endOfMonth
@@ -57,7 +59,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     const totalBebanPenyusutanResult = await prisma.bebanPenyusutan.aggregate({
       _sum: { nilai_penyusutan: true },
       where: {
-        tenant_id: locals.user.tenant_id!,
+        ...tenantFilter,
         tanggal: {
           gte: startOfMonth,
           lt: endOfMonth
@@ -72,7 +74,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 
   // Recent transactions
   const recentPendapatan = await prisma.pendapatan.findMany({
-    where: { tenant_id: locals.user.tenant_id! },
+    where: { ...tenantFilter },
     orderBy: [
       { tanggal: 'desc' },
       { created_at: 'desc' }
@@ -88,7 +90,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   });
 
   const recentPengeluaran = await prisma.pengeluaran.findMany({
-    where: { tenant_id: locals.user.tenant_id! },
+    where: { ...tenantFilter },
     orderBy: [
       { tanggal: 'desc' },
       { created_at: 'desc' }
@@ -104,9 +106,9 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   });
 
   // Fetch all time data for trend chart
-  const allPendapatan = await prisma.pendapatan.findMany({ where: { tenant_id: locals.user.tenant_id! }, select: { tanggal: true, jumlah: true } });
-  const allPengeluaran = await prisma.pengeluaran.findMany({ where: { tenant_id: locals.user.tenant_id! }, select: { tanggal: true, jumlah: true } });
-  const allPenyusutan = await prisma.bebanPenyusutan.findMany({ where: { tenant_id: locals.user.tenant_id! }, select: { tanggal: true, nilai_penyusutan: true } });
+  const allPendapatan = await prisma.pendapatan.findMany({ where: { ...tenantFilter }, select: { tanggal: true, jumlah: true } });
+  const allPengeluaran = await prisma.pengeluaran.findMany({ where: { ...tenantFilter }, select: { tanggal: true, jumlah: true } });
+  const allPenyusutan = await prisma.bebanPenyusutan.findMany({ where: { ...tenantFilter }, select: { tanggal: true, nilai_penyusutan: true } });
 
   const trendMap = new Map<string, { pendapatan: number, pengeluaran: number, penyusutan: number }>();
   
