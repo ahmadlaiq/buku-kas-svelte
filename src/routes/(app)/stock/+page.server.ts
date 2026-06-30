@@ -7,7 +7,7 @@ export const load: PageServerLoad = async ({ locals }) => {
   const barangs = await prisma.masterMaterial.findMany({
     where: {
       jenis: "BARANG",
-      tenant_id: locals.user.tenant_id!
+      ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {})
     },
     orderBy: {
       nama: "asc",
@@ -15,7 +15,7 @@ export const load: PageServerLoad = async ({ locals }) => {
   });
 
   const stockLogs = await prisma.stockLog.findMany({
-    where: { tenant_id: locals.user.tenant_id! },
+    where: { ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) },
     orderBy: {
       created_at: "desc",
     },
@@ -44,7 +44,7 @@ export const actions: Actions = {
 
     try {
       await prisma.masterMaterial.update({
-        where: { id, tenant_id: locals.user.tenant_id! },
+        where: { id, ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) },
         data: { barcode },
       });
       return { success: true, message: "Barcode berhasil diupdate" };
@@ -63,7 +63,7 @@ export const actions: Actions = {
     }
 
     try {
-      const existing = await prisma.masterMaterial.findUnique({ where: { id, tenant_id: locals.user.tenant_id! } });
+      const existing = await prisma.masterMaterial.findUnique({ where: { id, ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) } });
       if (!existing) return fail(404, { message: "Barang tidak ditemukan" });
 
       const stockDiff = stock - existing.stock;
@@ -84,7 +84,7 @@ export const actions: Actions = {
             stok_sebelum: existing.stock,
             stok_sesudah: stock,
             keterangan: "Penyesuaian stok manual",
-            tenant_id: locals.user.tenant_id!,
+            ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}),
             user_id: locals.user.id
           }
         })

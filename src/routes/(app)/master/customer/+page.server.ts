@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   const search = url.searchParams.get('search') || '';
   const statusFilter = url.searchParams.get('status') || 'semua';
 
-  const where: any = { tenant_id: locals.user.tenant_id };
+  const where: any = { ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) };
   if (search) {
     where.OR = [
       { nama: { contains: search, mode: 'insensitive' } },
@@ -70,7 +70,7 @@ export const actions: Actions = {
           nama, 
           no_hp: no_hp || null, 
           alamat: alamat || null,
-          tenant_id: locals.user.tenant_id!,
+          ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}),
           user_id: locals.user.id
         }
       });
@@ -93,7 +93,7 @@ export const actions: Actions = {
 
     try {
       await prisma.customer.update({
-        where: { id, tenant_id: locals.user.tenant_id! },
+        where: { id, ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) },
         data: { nama, no_hp: no_hp || null, alamat: alamat || null }
       });
       return { success: true };
@@ -112,7 +112,7 @@ export const actions: Actions = {
 
     try {
       await prisma.customer.update({
-        where: { id, tenant_id: locals.user.tenant_id! },
+        where: { id, ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) },
         data: { is_aktif: !current }
       });
       return { success: true };
@@ -129,7 +129,7 @@ export const actions: Actions = {
     if (!id) return fail(400, { error: 'ID tidak valid' });
 
     try {
-      await prisma.customer.delete({ where: { id, tenant_id: locals.user.tenant_id! } });
+      await prisma.customer.delete({ where: { id, ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) } });
       return { success: true };
     } catch (error) {
       return fail(500, { error: 'Gagal menghapus customer' });

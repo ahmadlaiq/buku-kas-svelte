@@ -27,22 +27,25 @@ export const handle: Handle = async ({ event, resolve }) => {
     const { prisma } = await import('$lib/server/prisma');
     const { pathname } = event.url;
     
-    if (event.locals.user.role_id) {
-      if (event.locals.user.role_name !== 'Super Admin') {
-        const allowedMenus = await prisma.roleMenu.findMany({
-          where: { role_id: event.locals.user.role_id },
-          include: { menu: true }
-        });
+    if (event.locals.user.role_name === 'Super Admin') {
+      // Full access for Super Admin, no need to check roleMenu
+    } else if (event.locals.user.role_id) {
+      const allowedMenus = await prisma.roleMenu.findMany({
+        where: { role_id: event.locals.user.role_id },
+        include: { menu: true }
+      });
 
-        // Cari apakah ada menu yang me-match pathname ini
-        // Misalnya pathname `/master/karyawan` akan match dengan menu.path `/master/karyawan`
-        const isAllowed = allowedMenus.some(rm => pathname === rm.menu.path || pathname.startsWith(rm.menu.path + '/'));
+      // Cari apakah ada menu yang me-match pathname ini
+      // Misalnya pathname `/master/karyawan` akan match dengan menu.path `/master/karyawan`
+      const isAllowed = allowedMenus.some(rm => pathname === rm.menu.path || pathname.startsWith(rm.menu.path + '/'));
 
-        if (!isAllowed) {
-          // Redirect to a safe page or show forbidden
-          return new Response('Akses Ditolak', { status: 403 });
-        }
+      if (!isAllowed) {
+        // Redirect to a safe page or show forbidden
+        return new Response('Akses Ditolak', { status: 403 });
       }
+    } else {
+      // User has no role assigned
+      return new Response('Akses Ditolak: Anda belum memiliki Role', { status: 403 });
     }
   }
 

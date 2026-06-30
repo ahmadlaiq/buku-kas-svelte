@@ -14,7 +14,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     by: ['kategori'],
     _sum: { jumlah: true },
     where: {
-      tenant_id: locals.user.tenant_id!,
+      ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}),
       tanggal: {
         gte: startOfMonth,
         lt: endOfMonth
@@ -35,7 +35,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   const totalPendapatanResult = await prisma.pendapatan.aggregate({
     _sum: { jumlah: true },
     where: {
-      tenant_id: locals.user.tenant_id!,
+      ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}),
       tanggal: {
         gte: startOfMonth,
         lt: endOfMonth
@@ -49,7 +49,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     by: ['kategori'],
     _sum: { jumlah: true },
     where: {
-      tenant_id: locals.user.tenant_id!,
+      ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}),
       tanggal: {
         gte: startOfMonth,
         lt: endOfMonth
@@ -70,7 +70,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   const totalPengeluaranResult = await prisma.pengeluaran.aggregate({
     _sum: { jumlah: true },
     where: {
-      tenant_id: locals.user.tenant_id!,
+      ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}),
       tanggal: {
         gte: startOfMonth,
         lt: endOfMonth
@@ -121,7 +121,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   if (withPenyusutan) {
     const bebanPenyusutanData = await prisma.bebanPenyusutan.findMany({
       where: {
-        tenant_id: locals.user.tenant_id!,
+        ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}),
         tanggal: {
           gte: startOfMonth,
           lt: endOfMonth
@@ -144,7 +144,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     const totalBebanPenyusutanResult = await prisma.bebanPenyusutan.aggregate({
       _sum: { nilai_penyusutan: true },
       where: {
-        tenant_id: locals.user.tenant_id!,
+        ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}),
         tanggal: {
           gte: startOfMonth,
           lt: endOfMonth

@@ -26,7 +26,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
     // Cari barang berdasarkan barcode
     const barang = await prisma.masterMaterial.findUnique({
-      where: { barcode, tenant_id: locals.user.tenant_id! },
+      where: { barcode, ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) },
     });
 
     if (!barang) {
@@ -62,7 +62,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
           latitude: latitude ? parseFloat(latitude) : null,
           longitude: longitude ? parseFloat(longitude) : null,
           keterangan: `Scan barcode via API`,
-          tenant_id: locals.user.tenant_id!,
+          ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}),
           user_id: locals.user.id
         }
       })

@@ -10,7 +10,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   const endDate = url.searchParams.get('endDate');
   
   // Build where clause
-  const where: any = { tenant_id: locals.user.tenant_id };
+  const where: any = { ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) };
   
   // Date range filter
   if (startDate || endDate) {
@@ -99,7 +99,7 @@ export const actions: Actions = {
           nilai_aset,
           umur_ekonomis,
           nilai_penyusutan,
-          tenant_id: locals.user.tenant_id!,
+          ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}),
           user_id: locals.user.id
         }
       });
@@ -129,7 +129,7 @@ export const actions: Actions = {
 
     try {
       await prisma.bebanPenyusutan.update({
-        where: { id, tenant_id: locals.user.tenant_id! },
+        where: { id, ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) },
         data: {
           tanggal: new Date(tanggal),
           nama_aset,
@@ -153,7 +153,7 @@ export const actions: Actions = {
 
     try {
       await prisma.bebanPenyusutan.delete({
-        where: { id, tenant_id: locals.user.tenant_id! }
+        where: { id, ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) }
       });
       return { success: true };
     } catch (error) {

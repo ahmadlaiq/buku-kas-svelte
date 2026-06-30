@@ -5,7 +5,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
   let menus: any[] = [];
   
   if (locals.user) {
-    if (locals.user.role_name === 'Super Admin' || !locals.user.role_id) {
+    if (locals.user.role_name === 'Super Admin') {
       menus = await prisma.menu.findMany({
         where: { is_aktif: true },
         orderBy: { urutan: 'asc' }

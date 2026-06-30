@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   const kategori = url.searchParams.get('kategori');
   
   // Build where clause
-  const where: any = { tenant_id: locals.user.tenant_id };
+  const where: any = { ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) };
   
   // Date range filter
   if (startDate || endDate) {
@@ -99,7 +99,7 @@ export const actions: Actions = {
 
     try {
       await prisma.pendapatan.delete({
-        where: { id, tenant_id: locals.user.tenant_id! }
+        where: { id, ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) }
       });
       return { success: true };
     } catch (error) {

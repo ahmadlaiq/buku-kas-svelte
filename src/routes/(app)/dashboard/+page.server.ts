@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   const endOfMonth = new Date(startOfMonth);
   endOfMonth.setMonth(endOfMonth.getMonth() + 1);
 
-  const tenantFilter = locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {};
+  const tenantFilter = locals.user.tenant_id ? { ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) } : {};
 
   // Total Pendapatan
   const totalPendapatanResult = await prisma.pendapatan.aggregate({

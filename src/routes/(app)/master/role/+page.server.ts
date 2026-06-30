@@ -21,7 +21,13 @@ export const load: PageServerLoad = async ({ url }) => {
 
   try {
     const [roles, totalCount] = await Promise.all([
-      prisma.role.findMany({ where, orderBy: { created_at: 'desc' }, take: limit, skip }),
+      prisma.role.findMany({ 
+        where, 
+        orderBy: { created_at: 'desc' }, 
+        take: limit, 
+        skip,
+        include: { _count: { select: { users: true } } }
+      }),
       prisma.role.count({ where })
     ]);
     return { roles, search, statusFilter, pagination: { page, limit, totalItems: totalCount, totalPages: Math.ceil(totalCount / limit) } };
