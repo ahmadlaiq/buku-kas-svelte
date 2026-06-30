@@ -5,12 +5,19 @@ export const load: LayoutServerLoad = async ({ locals }) => {
   let menus: any[] = [];
   
   if (locals.user && locals.user.role_id) {
-    const roleMenus = await prisma.roleMenu.findMany({
-      where: { role_id: locals.user.role_id },
-      include: { menu: true }
-    });
-    
-    menus = roleMenus.map(rm => rm.menu).filter(m => m.is_aktif).sort((a, b) => a.urutan - b.urutan);
+    if (locals.user.role_name === 'Super Admin') {
+      menus = await prisma.menu.findMany({
+        where: { is_aktif: true },
+        orderBy: { urutan: 'asc' }
+      });
+    } else {
+      const roleMenus = await prisma.roleMenu.findMany({
+        where: { role_id: locals.user.role_id },
+        include: { menu: true }
+      });
+      
+      menus = roleMenus.map(rm => rm.menu).filter(m => m.is_aktif).sort((a, b) => a.urutan - b.urutan);
+    }
   }
 
   return {

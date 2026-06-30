@@ -28,18 +28,20 @@ export const handle: Handle = async ({ event, resolve }) => {
     const { pathname } = event.url;
     
     if (event.locals.user.role_id) {
-      const allowedMenus = await prisma.roleMenu.findMany({
-        where: { role_id: event.locals.user.role_id },
-        include: { menu: true }
-      });
+      if (event.locals.user.role_name !== 'Super Admin') {
+        const allowedMenus = await prisma.roleMenu.findMany({
+          where: { role_id: event.locals.user.role_id },
+          include: { menu: true }
+        });
 
-      // Cari apakah ada menu yang me-match pathname ini
-      // Misalnya pathname `/master/karyawan` akan match dengan menu.path `/master/karyawan`
-      const isAllowed = allowedMenus.some(rm => pathname === rm.menu.path || pathname.startsWith(rm.menu.path + '/'));
+        // Cari apakah ada menu yang me-match pathname ini
+        // Misalnya pathname `/master/karyawan` akan match dengan menu.path `/master/karyawan`
+        const isAllowed = allowedMenus.some(rm => pathname === rm.menu.path || pathname.startsWith(rm.menu.path + '/'));
 
-      if (!isAllowed) {
-        // Redirect to a safe page or show forbidden
-        return new Response('Akses Ditolak', { status: 403 });
+        if (!isAllowed) {
+          // Redirect to a safe page or show forbidden
+          return new Response('Akses Ditolak', { status: 403 });
+        }
       }
     }
   }
