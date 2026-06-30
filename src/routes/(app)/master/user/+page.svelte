@@ -63,7 +63,13 @@
           <tr>
             <td><code>{item.username}</code></td>
             <td class="font-medium">{item.full_name}</td>
-            <td>{item.role ? <span class="badge badge-blue">{item.role.nama}</span> : <span class="text-muted">-</span>}</td>
+            <td>
+              {#if item.role}
+                <span class="badge badge-blue">{item.role.nama}</span>
+              {:else}
+                <span class="text-muted">-</span>
+              {/if}
+            </td>
             <td>{item.tenant?.nama || '-'}</td>
             <td><span class="badge {item.is_aktif ? 'badge-success' : 'badge-danger'}">{item.is_aktif ? 'Aktif' : 'Tidak Aktif'}</span></td>
             <td>

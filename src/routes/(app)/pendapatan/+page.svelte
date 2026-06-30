@@ -290,7 +290,11 @@
 
 <!-- Modal -->
 {#if showModal}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="modal-overlay" onclick={() => (showModal = false)}>
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="modal-content" onclick={(e) => e.stopPropagation()}>
       <div class="modal-header">
         <h2>📄 Detail Transaksi</h2>
