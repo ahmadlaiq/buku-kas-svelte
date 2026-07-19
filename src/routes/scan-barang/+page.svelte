@@ -181,7 +181,10 @@
     </div>
   {:else}
     <!-- Main UI -->
-    <header class="header">
+    <header class="header" style="position: relative;">
+      <a href="/stock" style="position: absolute; left: 1rem; top: 1rem; text-decoration: none; font-size: 1.25rem;">
+        ⬅️
+      </a>
       <h1>Scan Barang</h1>
       <p class="subtitle">Arahkan kamera ke barcode produk</p>
     </header>

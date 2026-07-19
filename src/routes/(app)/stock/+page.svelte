@@ -49,9 +49,14 @@
       <h1 class="mb-sm">📦 Stock Barang</h1>
       <p class="text-muted">Kelola stok dan barcode barang</p>
     </div>
-    <button onclick={() => (showLogModal = true)} class="btn btn-secondary">
-      📋 Riwayat Stok
-    </button>
+    <div class="flex gap-md">
+      <a href="/scan-barang" class="btn btn-primary">
+        📷 Scan Barang
+      </a>
+      <button onclick={() => (showLogModal = true)} class="btn btn-secondary">
+        📋 Riwayat Stok
+      </button>
+    </div>
   </div>
 
   {#if form?.message}

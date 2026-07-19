@@ -12,7 +12,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   }
 
   // Redirect to login if accessing protected routes without session
-  const protectedRoutes = ['/dashboard', '/pendapatan', '/pengeluaran', '/master', '/stock', '/beban', '/laporan'];
+  const protectedRoutes = ['/dashboard', '/pendapatan', '/pengeluaran', '/master', '/stock', '/beban', '/laporan', '/scan-barang'];
   const isProtectedRoute = protectedRoutes.some(route => event.url.pathname.startsWith(route));
 
   if (isProtectedRoute) {
@@ -35,9 +35,14 @@ export const handle: Handle = async ({ event, resolve }) => {
         include: { menu: true }
       });
 
+      let pathToCheck = pathname;
+      if (pathname.startsWith('/scan-barang')) {
+        pathToCheck = '/stock'; // scan-barang shares access with stock
+      }
+
       // Cari apakah ada menu yang me-match pathname ini
       // Misalnya pathname `/master/karyawan` akan match dengan menu.path `/master/karyawan`
-      const isAllowed = allowedMenus.some((rm: any) => pathname === rm.menu.path || pathname.startsWith(rm.menu.path + '/'));
+      const isAllowed = allowedMenus.some((rm: any) => pathToCheck === rm.menu.path || pathToCheck.startsWith(rm.menu.path + '/'));
 
       if (!isAllowed) {
         // Redirect to a safe page or show forbidden
