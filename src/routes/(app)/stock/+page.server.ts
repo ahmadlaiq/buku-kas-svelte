@@ -2,13 +2,25 @@ import { prisma } from "$lib/server/prisma";
 import type { PageServerLoad, Actions } from "./$types";
 import { fail } from "@sveltejs/kit";
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ url, locals }) => {
   if (!locals.user) return { barangs: [], stockLogs: [] };
+  
+  const search = url.searchParams.get('search') || '';
+  const where: any = {
+    jenis: "BARANG",
+    ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {})
+  };
+
+  if (search) {
+    where.OR = [
+      { nama: { contains: search, mode: 'insensitive' } },
+      { kategori: { contains: search, mode: 'insensitive' } },
+      { barcode: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
   const barangs = await prisma.masterMaterial.findMany({
-    where: {
-      jenis: "BARANG",
-      ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {})
-    },
+    where,
     orderBy: {
       nama: "asc",
     },
@@ -28,6 +40,7 @@ export const load: PageServerLoad = async ({ locals }) => {
   return {
     barangs,
     stockLogs,
+    search,
   };
 };
 

@@ -5,6 +5,14 @@
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
+  let searchValue = $state(data.search || '');
+
+  function doSearch() {
+    const searchParams = new URL(window.location.href).searchParams;
+    searchParams.set('search', searchValue);
+    window.location.href = `?${searchParams.toString()}`;
+  }
+
   let selectedBarang = $state<any>(null);
   let showEditStock = $state(false);
   let showEditBarcode = $state(false);
@@ -64,6 +72,18 @@
       {form.success ? '✅' : '⚠️'} {form.message}
     </div>
   {/if}
+
+  <div class="toolbar mb-lg" style="display: flex; gap: 0.5rem; max-width: 400px;">
+    <input
+      type="text"
+      class="form-control"
+      style="flex: 1; padding: 0.5rem 1rem; border: 1px solid var(--neutral-300); border-radius: var(--radius-md);"
+      placeholder="Cari nama, kategori, barcode..."
+      bind:value={searchValue}
+      onkeydown={(e) => e.key === 'Enter' && doSearch()}
+    />
+    <button class="btn btn-secondary" onclick={doSearch}>🔍 Cari</button>
+  </div>
 
   <div class="card">
     <div class="card-header">
