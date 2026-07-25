@@ -9,9 +9,17 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   const startDate = url.searchParams.get('startDate');
   const endDate = url.searchParams.get('endDate');
   const kategori = url.searchParams.get('kategori');
+  const search = url.searchParams.get('search');
   
   // Build where clause
   const where: any = { ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) };
+  
+  if (search) {
+    where.deskripsi = {
+      contains: search,
+      mode: 'insensitive'
+    };
+  }
   
   // Date range filter
   if (startDate || endDate) {
@@ -67,6 +75,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     })),
     total: totalResult._sum.jumlah || 0,
     filters: {
+      search: search || '',
       startDate: startDate || '',
       endDate: endDate || '',
       kategori: kategori || 'all',

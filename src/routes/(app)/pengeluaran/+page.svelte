@@ -66,7 +66,9 @@
     if (filterEndDate) searchParams.set("endDate", filterEndDate);
     if (filterKategori && filterKategori !== "all")
       searchParams.set("kategori", filterKategori);
+    if (searchValue) searchParams.set("search", searchValue);
 
+    searchParams.set("page", "1");
     window.location.href = `/pengeluaran?${searchParams.toString()}`;
   }
 
@@ -79,6 +81,7 @@
   let filterStartDate = $state(data.filters.startDate);
   let filterEndDate = $state(data.filters.endDate);
   let filterKategori = $state(data.filters.kategori);
+  let searchValue = $state(data.filters.search || '');
 
   function handleSort(column: string) {
     const searchParams = new URL(window.location.href).searchParams;
@@ -125,6 +128,10 @@
       <div style="flex: 1; min-width: 150px;">
         <label class="form-label">Tanggal Sampai:</label>
         <input type="date" class="form-input" bind:value={filterEndDate} />
+      </div>
+      <div style="flex: 1; min-width: 200px;">
+        <label class="form-label">Cari Deskripsi:</label>
+        <input type="text" class="form-input" placeholder="Cari..." bind:value={searchValue} onkeydown={(e) => e.key === 'Enter' && applyFilters()} />
       </div>
       <div style="flex: 1; min-width: 150px;">
         <label class="form-label">Kategori:</label>
