@@ -128,6 +128,7 @@ model PendapatanDetail {
   qty            Int
   harga_satuan   Float          @map("harga_satuan")
   subtotal       Float
+  kategori       String?
   created_at     DateTime       @default(now()) @map("created_at")
 
   pendapatan     Pendapatan     @relation(fields: [pendapatan_id], references: [id], onDelete: Cascade)

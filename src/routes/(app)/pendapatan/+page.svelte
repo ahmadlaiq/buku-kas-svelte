@@ -12,15 +12,19 @@
   const kategoriGroups = [
     {
       label: "Hair Treatment",
-      options: ["Hair Treatment", "Potong Rambut"]
+      options: ["Hair Treatment"]
     },
     {
       label: "Nail Art",
       options: ["Nail Art"]
     },
     {
-      label: "Product",
-      options: ["Product"]
+      label: "Dagangan",
+      options: ["Dagangan"]
+    },
+    {
+      label: "Jajan",
+      options: ["Jajan"]
     }
   ];
 
@@ -196,8 +200,17 @@
               <tr>
                 <td>{index + 1}</td>
                 <td>{formatDate(item.tanggal)}</td>
-                <td><span class="badge badge-primary">{item.kategori}</span></td
-                >
+                <td>
+                  {#if item.displayCategories}
+                    <div class="flex gap-xs flex-wrap">
+                      {#each item.displayCategories as cat}
+                        <span class="badge badge-primary">{cat}</span>
+                      {/each}
+                    </div>
+                  {:else}
+                    <span class="badge badge-primary">{item.kategori}</span>
+                  {/if}
+                </td>
                 <td>{item.deskripsi || "-"}</td>
                 <td
                   style="text-align: right;"

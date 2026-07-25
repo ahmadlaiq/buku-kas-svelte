@@ -9,26 +9,31 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   const startDate = url.searchParams.get('startDate');
   const endDate = url.searchParams.get('endDate');
   const kategori = url.searchParams.get('kategori');
-  
-  // Build where clause
-  const where: any = { ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) };
+  // Build base where clause
+  const baseWhere: any = { ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) };
   
   // Date range filter
   if (startDate || endDate) {
-    where.tanggal = {};
+    baseWhere.tanggal = {};
     if (startDate) {
-      where.tanggal.gte = new Date(startDate + 'T00:00:00Z');
+      baseWhere.tanggal.gte = new Date(startDate + 'T00:00:00Z');
     }
     if (endDate) {
       const endDateTime = new Date(endDate + 'T00:00:00Z');
       endDateTime.setDate(endDateTime.getDate() + 1); // Include the end date
-      where.tanggal.lt = endDateTime;
+      baseWhere.tanggal.lt = endDateTime;
     }
   }
   
-  // Category filter
+  const queryWhere = { ...baseWhere };
+
+  // Category filter on details
   if (kategori && kategori !== 'all') {
-    where.kategori = kategori;
+    queryWhere.details = {
+      some: {
+        kategori: kategori
+      }
+    };
   }
   
   // Sorting
@@ -44,7 +49,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 
   const [data, totalCount] = await Promise.all([
     prisma.pendapatan.findMany({
-      where,
+      where: queryWhere,
       orderBy: [
         { [validatedSortBy]: sortOrder },
         { created_at: 'desc' }
@@ -60,20 +65,38 @@ export const load: PageServerLoad = async ({ url, locals }) => {
         }
       }
     }),
-    prisma.pendapatan.count({ where })
+    prisma.pendapatan.count({ where: queryWhere })
   ]);
 
-  const totalResult = await prisma.pendapatan.aggregate({
-    _sum: { jumlah: true },
-    where
-  });
+  let total = 0;
+  if (kategori && kategori !== 'all') {
+    const detailAgg = await prisma.pendapatanDetail.aggregate({
+      _sum: { subtotal: true },
+      where: {
+        kategori: kategori,
+        pendapatan: baseWhere
+      }
+    });
+    total = detailAgg._sum.subtotal || 0;
+  } else {
+    const totalResult = await prisma.pendapatan.aggregate({
+      _sum: { jumlah: true },
+      where: baseWhere
+    });
+    total = totalResult._sum.jumlah || 0;
+  }
 
   return {
-    pendapatan: data.map(p => ({
-      ...p,
-      tanggal: p.tanggal.toISOString().split('T')[0]
-    })),
-    total: totalResult._sum.jumlah || 0,
+    pendapatan: data.map(p => {
+      const categories = [...new Set(p.details.map((d: any) => d.kategori).filter(Boolean))];
+      if (categories.length === 0) categories.push(p.kategori);
+      return {
+        ...p,
+        tanggal: p.tanggal.toISOString().split('T')[0],
+        displayCategories: categories
+      };
+    }),
+    total: total,
     filters: {
       startDate: startDate || '',
       endDate: endDate || '',
