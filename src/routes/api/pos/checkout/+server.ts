@@ -89,7 +89,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       const pendapatan = await tx.pendapatan.create({
         data: {
           tanggal: new Date(),
-          kategori: 'Penjualan Kasir',
           deskripsi: deskripsiLengkap,
           jumlah: parseFloat(total_bayar),
           tenant_id,

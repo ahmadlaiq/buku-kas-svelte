@@ -47,7 +47,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   // Sorting
   const sortBy = url.searchParams.get('sortBy') || 'tanggal';
   const sortOrder = (url.searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
-  const allowedSortFields = ['tanggal', 'kategori', 'deskripsi', 'jumlah'];
+  const allowedSortFields = ['tanggal', 'deskripsi', 'jumlah'];
   const validatedSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'tanggal';
   
   // Pagination
@@ -97,7 +97,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   return {
     pendapatan: data.map(p => {
       const categories = [...new Set(p.details.map((d: any) => d.kategori).filter(Boolean))];
-      if (categories.length === 0) categories.push(p.kategori);
+      if (categories.length === 0) categories.push('Umum');
       return {
         ...p,
         tanggal: p.tanggal.toISOString().split('T')[0],
@@ -130,9 +130,14 @@ export const actions: Actions = {
     const id = parseInt(formData.get('id') as string);
 
     try {
-      await prisma.pendapatan.delete({
-        where: { id, ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) }
-      });
+      await prisma.$transaction([
+        prisma.pendapatanDetail.deleteMany({
+          where: { pendapatan_id: id }
+        }),
+        prisma.pendapatan.delete({
+          where: { id, ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) }
+        })
+      ]);
       return { success: true };
     } catch (error) {
       console.error('Delete pendapatan error:', error);

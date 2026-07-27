@@ -106,7 +106,6 @@ model User {
 model Pendapatan {
   id         Int      @id @default(autoincrement())
   tanggal    DateTime
-  kategori   String
   deskripsi  String?
   jumlah     Float
   tenant_id  Int      @map("tenant_id")

@@ -73,7 +73,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   const labaRugi = totalPendapatan - (totalPengeluaran + totalBebanPenyusutan);
 
   // Recent transactions
-  const recentPendapatan = await prisma.pendapatan.findMany({
+  const recentPendapatanRaw = await prisma.pendapatan.findMany({
     where: { ...tenantFilter },
     orderBy: [
       { tanggal: 'desc' },
@@ -83,10 +83,23 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     select: {
       id: true,
       tanggal: true,
-      kategori: true,
       deskripsi: true,
-      jumlah: true
+      jumlah: true,
+      details: {
+        select: { kategori: true }
+      }
     }
+  });
+
+  const recentPendapatan = recentPendapatanRaw.map(p => {
+    const cats = [...new Set(p.details.map(d => d.kategori).filter(Boolean))];
+    return {
+      id: p.id,
+      tanggal: p.tanggal,
+      deskripsi: p.deskripsi,
+      jumlah: p.jumlah,
+      kategori: cats.length > 0 ? cats.join(', ') : 'Umum'
+    };
   });
 
   const recentPengeluaran = await prisma.pengeluaran.findMany({
