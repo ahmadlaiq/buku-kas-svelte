@@ -14,11 +14,21 @@ export function formatNumber(value: string | number): string {
 }
 
 /**
- * Parse angka yang sudah diformat kembali ke angka asli
+ * Parse angka yang sudah diformat kembali ke angka asli (sebagai string)
  * Contoh: "10.000" -> "10000"
  */
 export function parseFormattedNumber(value: string): string {
   return value.replace(/\./g, '');
+}
+
+/**
+ * Parse angka yang sudah diformat kembali ke angka asli (sebagai number)
+ * Contoh: "10.000" -> 10000
+ */
+export function parseToNumber(value: string | number): number {
+  if (typeof value === 'number') return value;
+  const cleanStr = value.replace(/[^0-9]/g, '');
+  return parseInt(cleanStr, 10) || 0;
 }
 
 /**

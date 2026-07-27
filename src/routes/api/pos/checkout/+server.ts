@@ -48,10 +48,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
         let detailStr = `${item.qty}x ${namaItem}`;
         
-        if (item.type === 'JASA' && item.karyawan_id) {
-          const karyawan = await tx.karyawan.findUnique({ where: { id: parseInt(item.karyawan_id) } });
-          if (karyawan) {
-            detailStr += ` (Stylist: ${karyawan.nama})`;
+        if (item.type === 'JASA' && item.karyawan_ids && item.karyawan_ids.length > 0) {
+          const validIds = item.karyawan_ids.filter((id: string) => id).map((id: string) => parseInt(id));
+          if (validIds.length > 0) {
+            const karyawans = await tx.karyawan.findMany({ where: { id: { in: validIds } } });
+            if (karyawans.length > 0) {
+              detailStr += ` (Stylist: ${karyawans.map(k => k.nama).join(', ')})`;
+            }
           }
         }
         
@@ -94,13 +97,29 @@ export const POST: RequestHandler = async ({ request, locals }) => {
           tenant_id,
           user_id,
           details: {
-            create: items.map((item: any) => ({
-              material_id: parseInt(item.item_id),
-              karyawan_id: item.karyawan_id ? parseInt(item.karyawan_id) : null,
-              qty: parseInt(item.qty),
-              harga_satuan: parseFloat(item.price),
-              subtotal: parseFloat(item.price) * parseInt(item.qty)
-            }))
+            create: items.flatMap((item: any) => {
+              if (item.type === 'JASA' && item.karyawan_ids && item.karyawan_ids.length > 0) {
+                const validIds = item.karyawan_ids.filter((id: string) => id);
+                if (validIds.length > 0) {
+                  const splitPrice = parseFloat(item.price) / validIds.length;
+                  return validIds.map((kid: string) => ({
+                    material_id: parseInt(item.item_id),
+                    karyawan_id: parseInt(kid),
+                    qty: parseInt(item.qty),
+                    harga_satuan: splitPrice,
+                    subtotal: splitPrice * parseInt(item.qty)
+                  }));
+                }
+              }
+              
+              return [{
+                material_id: parseInt(item.item_id),
+                karyawan_id: null,
+                qty: parseInt(item.qty),
+                harga_satuan: parseFloat(item.price),
+                subtotal: parseFloat(item.price) * parseInt(item.qty)
+              }];
+            })
           }
         }
       });

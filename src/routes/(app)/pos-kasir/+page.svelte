@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { PageData } from './$types';
+  import { formatNumber, parseToNumber } from '$lib/utils/numberFormat';
   
   export let data: PageData;
 
@@ -82,7 +83,7 @@
       price: item.price,
       qty: 1,
       discount: 0,
-      karyawan_id: item.type === 'JASA' ? '' : null
+      karyawan_ids: item.type === 'JASA' ? [''] : []
     }];
   }
 
@@ -102,7 +103,7 @@
 
     // Validation for Services (Must select stylist)
     for (const item of cart) {
-      if (item.type === 'JASA' && !item.karyawan_id) {
+      if (item.type === 'JASA' && (!item.karyawan_ids || item.karyawan_ids.length === 0 || item.karyawan_ids.some((id: string) => !id))) {
         alert(`Harap pilih Stylist/Karyawan untuk layanan: ${item.nama}`);
         return;
       }
@@ -124,7 +125,7 @@
         item_id: c.item_id,
         qty: c.qty,
         price: c.price - (c.discount || 0), // net price per item
-        karyawan_id: c.karyawan_id || null
+        karyawan_ids: c.karyawan_ids || []
       }))
     };
 
@@ -157,6 +158,82 @@
     } catch (error) {
       alert('Gagal menghubungi server API');
     }
+  }
+
+  function printReceipt() {
+    if (!checkoutResponse) return;
+
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    if (!printWindow) {
+      alert('Browser memblokir popup. Harap izinkan popup untuk mencetak struk.');
+      return;
+    }
+    
+    let itemsHtml = '';
+    cart.forEach(c => {
+      let sub = c.qty * (c.price - (c.discount || 0));
+      itemsHtml += `
+        <div class="item">
+          <div>${c.nama}</div>
+          <div class="flex-between">
+            <span>${c.qty} x ${formatRp(c.price)}</span>
+            <span>${formatRp(sub)}</span>
+          </div>
+          ${c.discount > 0 ? `<div class="discount">Diskon: -${formatRp(c.discount * c.qty)}</div>` : ''}
+        </div>
+      `;
+    });
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Struk Transaksi - TRX-${checkoutResponse.id}</title>
+          <style>
+            body { font-family: 'Courier New', Courier, monospace, sans-serif; font-size: 12px; margin: 0; padding: 10px; color: black; max-width: 80mm; }
+            h2 { margin: 0 0 5px 0; font-size: 16px; text-align: center; }
+            p { margin: 3px 0; }
+            .text-center { text-align: center; }
+            .flex-between { display: flex; justify-content: space-between; }
+            hr { border: none; border-top: 1px dashed black; margin: 10px 0; }
+            .item { margin-bottom: 8px; }
+            .discount { font-style: italic; text-align: right; font-size: 11px; margin-top: 2px; }
+            .summary { margin-top: 10px; }
+            .summary .flex-between { margin-bottom: 4px; font-weight: bold; font-size: 13px; }
+            @media print {
+              body { max-width: 100%; margin: 0; padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <h2>${data.tenant.nama}</h2>
+          <p class="text-center">Struk Pembayaran</p>
+          <hr />
+          <p>No TRX: ${checkoutResponse.id}</p>
+          <p>Tanggal: ${new Date().toLocaleString('id-ID')}</p>
+          <p>Pelanggan: ${selectedCustomerName}</p>
+          <hr />
+          ${itemsHtml}
+          <hr />
+          <div class="summary">
+            <div class="flex-between"><span>Total</span> <span>${formatRp(grandTotal)}</span></div>
+            <div class="flex-between"><span>Bayar (${paymentMethod})</span> <span>${formatRp(paymentMethod === 'CASH' ? uangDiterima : grandTotal)}</span></div>
+            ${paymentMethod === 'CASH' ? `<div class="flex-between"><span>Kembali</span> <span>${formatRp(kembalian)}</span></div>` : ''}
+          </div>
+          <hr />
+          <p class="text-center" style="margin-top: 20px;">Terima Kasih atas Kunjungan Anda</p>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            }
+          </script>
+        </body>
+      </html>
+    `;
+    
+    printWindow.document.write(html);
+    printWindow.document.close();
   }
 
   function resetTransaction() {
@@ -291,31 +368,39 @@
           </div>
           
           <div class="cart-item-details">
-            <div class="price-row">
-              <span class="price-val">{formatRp(c.price)}</span>
-            </div>
-
-            <!-- QTY & DISCOUNT -->
             <div class="control-row">
-              <div class="qty-control" class:hidden={c.type === 'JASA'}>
+              <div class="price-control">
+                <label>Harga (Rp):</label>
+                <input type="text" inputmode="numeric" value={formatNumber(c.price)} on:input={(e) => { c.price = parseToNumber(e.currentTarget.value); cart = cart; }} />
+              </div>
+              <div class="qty-control">
                 <label>Qty:</label>
-                <input type="number" min="1" bind:value={c.qty} disabled={c.type === 'JASA'} />
+                <input type="number" min="1" bind:value={c.qty} />
               </div>
               <div class="discount-control">
                 <label>Diskon (Rp):</label>
-                <input type="number" min="0" bind:value={c.discount} />
+                <input type="text" inputmode="numeric" value={c.discount ? formatNumber(c.discount) : ''} on:input={(e) => { c.discount = parseToNumber(e.currentTarget.value); cart = cart; }} />
               </div>
             </div>
 
             <!-- STYLIST SELECTION FOR JASA -->
             {#if c.type === 'JASA'}
               <div class="stylist-control">
-                <select bind:value={c.karyawan_id} class:error={!c.karyawan_id}>
-                  <option value="" disabled selected>Pilih Stylist / Karyawan</option>
-                  {#each data.employees as emp}
-                    <option value={emp.id}>{emp.nama}</option>
-                  {/each}
-                </select>
+                <label>Stylist / Karyawan:</label>
+                {#each c.karyawan_ids as kid, i}
+                  <div class="stylist-row">
+                    <select bind:value={c.karyawan_ids[i]} class:error={!kid}>
+                      <option value="" disabled selected>Pilih Stylist / Karyawan</option>
+                      {#each data.employees as emp}
+                        <option value={emp.id}>{emp.nama}</option>
+                      {/each}
+                    </select>
+                    {#if c.karyawan_ids.length > 1}
+                      <button class="remove-stylist-btn" on:click={() => { c.karyawan_ids.splice(i, 1); cart = [...cart]; }}>✕</button>
+                    {/if}
+                  </div>
+                {/each}
+                <button class="add-stylist-btn" on:click={() => { c.karyawan_ids.push(''); cart = [...cart]; }}>+ Tambah Stylist Lain</button>
               </div>
             {/if}
             
@@ -359,7 +444,7 @@
         {#if paymentMethod === 'CASH'}
           <div class="cash-input-group">
             <label>Uang Diterima (Rp)</label>
-            <input type="number" bind:value={uangDiterima} placeholder="0" class="cash-input" />
+            <input type="text" inputmode="numeric" value={uangDiterima ? formatNumber(uangDiterima) : ''} on:input={(e) => uangDiterima = parseToNumber(e.currentTarget.value)} placeholder="0" class="cash-input" />
             <div class="change-display {uangDiterima < grandTotal && uangDiterima > 0 ? 'error' : ''}">
               Kembalian: {formatRp(kembalian)}
             </div>
@@ -391,7 +476,7 @@
       </div>
 
       <div class="modal-actions">
-        <button class="btn btn-secondary" on:click={() => alert('Fitur Cetak Struk akan segera hadir!')}>🖨️ Cetak Struk</button>
+        <button class="btn btn-secondary" on:click={printReceipt}>🖨️ Cetak Struk</button>
         <button class="btn btn-primary" on:click={resetTransaction}>Transaksi Baru</button>
       </div>
     </div>
@@ -681,10 +766,23 @@
   .control-row input { width: 100%; box-sizing: border-box; padding: 0.4rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.875rem; }
   .hidden { opacity: 0.5; pointer-events: none; }
 
-  .stylist-control select {
-    width: 100%; box-sizing: border-box; max-width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.875rem; background: #f8fafc; text-overflow: ellipsis;
+  .stylist-control label { display: block; font-size: 0.75rem; color: #6b7280; margin-bottom: 0.2rem; }
+  .stylist-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
   }
-  .stylist-control select.error { border-color: #ef4444; background: #fef2f2; }
+  .stylist-row select {
+    flex: 1; width: 100%; box-sizing: border-box; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.875rem; background: #f8fafc; text-overflow: ellipsis;
+  }
+  .stylist-row select.error { border-color: #ef4444; background: #fef2f2; }
+  .remove-stylist-btn {
+    background: #fee2e2; color: #ef4444; border: none; border-radius: 0.375rem; padding: 0 0.5rem; cursor: pointer; font-weight: bold;
+  }
+  .add-stylist-btn {
+    background: transparent; color: #3b82f6; border: 1px dashed #3b82f6; border-radius: 0.375rem; padding: 0.4rem; cursor: pointer; font-size: 0.8rem; width: 100%; transition: background 0.2s;
+  }
+  .add-stylist-btn:hover { background: #eff6ff; }
 
   .item-subtotal {
     text-align: right;
