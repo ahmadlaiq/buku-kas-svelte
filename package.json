@@ -36,7 +36,8 @@
 		"jsonwebtoken": "^9.0.3",
 		"pg": "^8.18.0",
 		"prisma": "5.22.0",
-		"svelte-chartjs": "^4.0.1"
+		"svelte-chartjs": "^4.0.1",
+		"sweetalert2": "^11.26.25"
 	},
 	"prisma": {
 		"seed": "npx tsx prisma/seed.ts"

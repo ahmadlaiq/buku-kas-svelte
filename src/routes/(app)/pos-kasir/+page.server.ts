@@ -38,7 +38,7 @@ export const load: PageServerLoad = async ({ locals }) => {
   return {
     services,
     products,
-    customers: customers.map(c => ({ id: c.id, nama: c.nama })),
+    customers: customers.map(c => ({ id: c.id, nama: c.nama, no_hp: c.no_hp })),
     employees: employees.map(e => ({ id: e.id, nama: e.nama }))
   };
 };

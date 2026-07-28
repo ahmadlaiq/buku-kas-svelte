@@ -3,7 +3,9 @@
   import { enhance } from "$app/forms";
   import { invalidateAll } from "$app/navigation";
   import { formatNumber, parseFormattedNumber } from "$lib/utils/numberFormat";
-
+  import { showAlert } from "$lib/utils/alert";
+  import Swal from 'sweetalert2';
+  
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
   let showModal = $state(false);
@@ -47,6 +49,127 @@
   function handleOpenModal(detailData: any) {
     selectedDetail = detailData;
     showModal = true;
+  }
+
+  function handlePrintClick(item: any) {
+    Swal.fire({
+      title: 'Opsi Bagikan',
+      text: 'Pilih metode pembagian struk:',
+      icon: 'question',
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: '🖨️ Cetak Biasa',
+      denyButtonText: '📱 Kirim WA',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#6b7280',
+      denyButtonColor: '#25D366'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        printReceipt(item);
+      } else if (result.isDenied) {
+        promptWA(item);
+      }
+    });
+  }
+
+  function printReceipt(item: any) {
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    if (!printWindow) {
+      showAlert.warning('Popup Diblokir', 'Browser memblokir popup.');
+      return;
+    }
+    
+    let customerName = 'Pelanggan';
+    const match = item.deskripsi?.match(/Pelanggan:\s([^.]+)/);
+    if (match) customerName = match[1];
+
+    let itemsHtml = '';
+    if (item.details && item.details.length > 0) {
+      item.details.forEach((d: any) => {
+        itemsHtml += `
+          <div style="margin-bottom: 8px;">
+            <div>${d.material?.nama || 'Item'}</div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>${d.qty} x ${formatCurrency(d.harga_satuan)}</span>
+              <span>${formatCurrency(d.subtotal)}</span>
+            </div>
+          </div>
+        `;
+      });
+    } else {
+      itemsHtml = `<div style="text-align: center;">${item.deskripsi}</div>`;
+    }
+
+    let tenantName = data.tenant?.nama || 'BUKU KAS SALON';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Struk - TRX-${item.id}</title>
+          <style>
+            body { font-family: 'Courier New', Courier, monospace, sans-serif; font-size: 12px; margin: 0; padding: 10px; color: black; max-width: 80mm; }
+            h2 { margin: 0 0 5px 0; font-size: 16px; text-align: center; }
+            p { margin: 3px 0; }
+            hr { border: none; border-top: 1px dashed black; margin: 10px 0; }
+            @media print { body { max-width: 100%; margin: 0; padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <h2>${tenantName}</h2>
+          <p style="text-align: center;">Salinan Struk</p>
+          <hr />
+          <p>No TRX: ${item.id}</p>
+          <p>Tanggal: ${formatDate(item.tanggal)}</p>
+          <p>Pelanggan: ${customerName}</p>
+          <hr />
+          ${itemsHtml}
+          <hr />
+          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 13px;">
+            <span>Total</span> <span>${formatCurrency(item.jumlah)}</span>
+          </div>
+          <hr />
+          <p style="text-align: center; margin-top: 20px;">Terima Kasih</p>
+          <script>
+            window.onload = function() { window.print(); setTimeout(function() { window.close(); }, 500); }
+          <\\/script>
+        </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+  }
+
+  function promptWA(item: any) {
+    Swal.fire({
+      title: 'Kirim via WhatsApp',
+      input: 'text',
+      inputLabel: 'Masukkan Nomor HP Pelanggan',
+      inputPlaceholder: 'Contoh: 08123456789',
+      showCancelButton: true,
+      confirmButtonText: 'Kirim',
+      cancelButtonText: 'Batal'
+    }).then((res) => {
+      if (res.isConfirmed && res.value) {
+        let phone = res.value.replace(/\D/g, '');
+        if (phone.startsWith('0')) phone = '62' + phone.slice(1);
+        
+        let customerName = 'Pelanggan';
+        const match = item.deskripsi?.match(/Pelanggan:\s([^.]+)/);
+        if (match) customerName = match[1];
+
+        let itemsText = '';
+        if (item.details && item.details.length > 0) {
+          itemsText = item.details.map((d: any) => `- ${d.qty}x ${d.material?.nama} = ${formatCurrency(d.subtotal)}`).join('%0A');
+        } else {
+          itemsText = item.deskripsi || 'Tidak ada detail';
+        }
+
+        let tenantName = data.tenant?.nama || 'Buku Kas Salon';
+        let text = `Halo Kak ${customerName},%0ATerima kasih atas kunjungan Anda di *${tenantName}*.%0A%0A*Salinan Transaksi (TRX-${item.id}):*%0A${itemsText}%0A%0ATotal: *${formatCurrency(item.jumlah)}*%0A%0ATerima kasih!`;
+        window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
+      }
+    });
   }
 
   function applyFilters() {
@@ -231,6 +354,14 @@
                     <button
                       type="button"
                       class="btn btn-secondary btn-sm"
+                      title="Cetak atau Kirim WA"
+                      onclick={() => handlePrintClick(item)}
+                    >
+                      🖨️
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-secondary btn-sm"
                       onclick={() => handleOpenModal(item)}
                     >
                       📄 Detail
@@ -247,11 +378,14 @@
                     >
                       <input type="hidden" name="id" value={item.id} />
                       <button
-                        type="submit"
+                        type="button"
                         class="btn btn-danger btn-sm"
                         onclick={(e) => {
-                          if (!confirm("Yakin ingin menghapus data ini?")) {
-                            e.preventDefault();
+                          const form = (e.currentTarget as HTMLButtonElement).closest('form');
+                          if (form) {
+                            showAlert.confirm('Hapus Data?', 'Yakin ingin menghapus data ini?', 'Ya, Hapus').then(res => {
+                              if (res.isConfirmed) form.requestSubmit();
+                            });
                           }
                         }}
                       >

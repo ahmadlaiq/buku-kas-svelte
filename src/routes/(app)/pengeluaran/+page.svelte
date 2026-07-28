@@ -3,7 +3,8 @@
   import { enhance } from "$app/forms";
   import { invalidateAll } from "$app/navigation";
   import { formatNumber, parseFormattedNumber } from "$lib/utils/numberFormat";
-
+  import { showAlert } from "$lib/utils/alert";
+  
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
   let showModal = $state(false);
@@ -234,11 +235,14 @@
                   >
                     <input type="hidden" name="id" value={item.id} />
                     <button
-                      type="submit"
+                      type="button"
                       class="btn btn-danger btn-sm"
                       onclick={(e) => {
-                        if (!confirm("Yakin ingin menghapus data ini?")) {
-                          e.preventDefault();
+                        const form = (e.currentTarget as HTMLButtonElement).closest('form');
+                        if (form) {
+                          showAlert.confirm('Hapus Data?', 'Yakin ingin menghapus data ini?', 'Ya, Hapus').then(res => {
+                            if (res.isConfirmed) form.requestSubmit();
+                          });
                         }
                       }}
                     >

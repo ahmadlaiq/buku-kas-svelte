@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import type { PageData } from './$types';
   import { formatNumber, parseToNumber } from '$lib/utils/numberFormat';
+  import { showAlert } from '$lib/utils/alert';
   
   export let data: PageData;
 
@@ -17,6 +18,8 @@
   let isCustomerDropdownOpen = false;
   let customerSearch = '';
   let searchableSelectRef: HTMLElement;
+  let showPrintOptions = false;
+  let selectedCustomerHp = '';
   
   function handleClickOutside(event: Event) {
     if (searchableSelectRef && !searchableSelectRef.contains(event.target as Node)) {
@@ -34,8 +37,12 @@
   // --- COMPUTED / DERIVED ---
   $: filteredCustomers = data.customers.filter(c => c.nama.toLowerCase().includes(customerSearch.toLowerCase()));
   $: selectedCustomerName = selectedCustomerId 
-    ? data.customers.find(c => c.id === selectedCustomerId)?.nama || 'Guest / Walk-in'
+    ? data.customers.find(c => c.id === parseInt(selectedCustomerId))?.nama || 'Guest / Walk-in'
     : 'Guest / Walk-in';
+    
+  $: selectedCustomerHp = selectedCustomerId
+    ? data.customers.find(c => c.id === parseInt(selectedCustomerId))?.no_hp || ''
+    : '';
 
   function selectCustomer(id: string) {
     selectedCustomerId = id;
@@ -57,7 +64,7 @@
   // --- ACTIONS ---
   function addToCart(item: any) {
     if (item.type === 'PRODUCT' && item.stock <= 0) {
-      alert('Stok produk habis!');
+      showAlert.warning('Stok Habis', 'Stok produk ini sudah habis!');
       return;
     }
     
@@ -69,7 +76,7 @@
           existing.qty += 1;
           cart = [...cart];
         } else {
-          alert('Maksimal stok tercapai!');
+          showAlert.warning('Batas Maksimal', 'Maksimal stok produk telah tercapai!');
         }
         return;
       }
@@ -97,20 +104,12 @@
 
   async function handleCheckout() {
     if (cart.length === 0) {
-      alert('Keranjang belanja kosong!');
+      showAlert.warning('Keranjang Kosong', 'Silakan tambahkan layanan atau produk terlebih dahulu!');
       return;
     }
 
-    // Validation for Services (Must select stylist)
-    for (const item of cart) {
-      if (item.type === 'JASA' && (!item.karyawan_ids || item.karyawan_ids.length === 0 || item.karyawan_ids.some((id: string) => !id))) {
-        alert(`Harap pilih Stylist/Karyawan untuk layanan: ${item.nama}`);
-        return;
-      }
-    }
-
     if (paymentMethod === 'CASH' && uangDiterima < grandTotal) {
-      alert('Uang diterima kurang dari total bayar!');
+      showAlert.warning('Uang Kurang', 'Uang diterima kurang dari total bayar!');
       return;
     }
 
@@ -125,7 +124,7 @@
         item_id: c.item_id,
         qty: c.qty,
         price: c.price - (c.discount || 0), // net price per item
-        karyawan_ids: c.karyawan_ids || []
+        karyawan_ids: (c.karyawan_ids || []).filter((id: string) => id)
       }))
     };
 
@@ -139,7 +138,7 @@
       const result = await res.json();
       
       if (!res.ok) {
-        alert(result.error || 'Terjadi kesalahan saat checkout');
+        showAlert.error('Gagal Checkout', result.error || 'Terjadi kesalahan saat checkout');
         return;
       }
       
@@ -156,7 +155,7 @@
       isCheckoutSuccess = true;
       checkoutResponse = result.data || payload;
     } catch (error) {
-      alert('Gagal menghubungi server API');
+      showAlert.error('Error Jaringan', 'Gagal menghubungi server API');
     }
   }
 
@@ -165,13 +164,15 @@
 
     const printWindow = window.open('', '_blank', 'width=400,height=600');
     if (!printWindow) {
-      alert('Browser memblokir popup. Harap izinkan popup untuk mencetak struk.');
+      showAlert.warning('Popup Diblokir', 'Browser memblokir popup. Harap izinkan popup untuk mencetak struk.');
       return;
     }
     
     let itemsHtml = '';
     cart.forEach(c => {
       let sub = c.qty * (c.price - (c.discount || 0));
+      let discountHtml = c.discount > 0 ? '<div class="discount">Diskon: -' + formatRp(c.discount * c.qty) + '</div>' : '';
+      
       itemsHtml += `
         <div class="item">
           <div>${c.nama}</div>
@@ -179,10 +180,16 @@
             <span>${c.qty} x ${formatRp(c.price)}</span>
             <span>${formatRp(sub)}</span>
           </div>
-          ${c.discount > 0 ? `<div class="discount">Diskon: -${formatRp(c.discount * c.qty)}</div>` : ''}
+          ${discountHtml}
         </div>
       `;
     });
+
+    let kembalianHtml = paymentMethod === 'CASH' 
+      ? '<div class="flex-between"><span>Kembali</span> <span>' + formatRp(kembalian) + '</span></div>'
+      : '';
+    
+    let tenantName = data.tenant?.nama || 'BUKU KAS SALON';
 
     const html = `
       <!DOCTYPE html>
@@ -206,7 +213,7 @@
           </style>
         </head>
         <body>
-          <h2>${data.tenant.nama}</h2>
+          <h2>${tenantName}</h2>
           <p class="text-center">Struk Pembayaran</p>
           <hr />
           <p>No TRX: ${checkoutResponse.id}</p>
@@ -218,7 +225,7 @@
           <div class="summary">
             <div class="flex-between"><span>Total</span> <span>${formatRp(grandTotal)}</span></div>
             <div class="flex-between"><span>Bayar (${paymentMethod})</span> <span>${formatRp(paymentMethod === 'CASH' ? uangDiterima : grandTotal)}</span></div>
-            ${paymentMethod === 'CASH' ? `<div class="flex-between"><span>Kembali</span> <span>${formatRp(kembalian)}</span></div>` : ''}
+            ${kembalianHtml}
           </div>
           <hr />
           <p class="text-center" style="margin-top: 20px;">Terima Kasih atas Kunjungan Anda</p>
@@ -227,13 +234,31 @@
               window.print();
               setTimeout(function() { window.close(); }, 500);
             }
-          </script>
+          <\\/script>
         </body>
       </html>
     `;
     
     printWindow.document.write(html);
     printWindow.document.close();
+  }
+
+  function sendToWA() {
+    if (!selectedCustomerHp) {
+      showAlert.warning('Nomor WA Kosong', 'Pelanggan ini tidak memiliki nomor HP yang terdaftar.');
+      return;
+    }
+    
+    let phone = selectedCustomerHp.replace(/\D/g, '');
+    if (phone.startsWith('0')) {
+      phone = '62' + phone.slice(1);
+    }
+    
+    let itemsText = cart.map((c: any) => `- ${c.qty}x ${c.nama} = ${formatRp(c.qty * (c.price - (c.discount || 0)))}`).join('%0A');
+    
+    let text = `Halo Kak ${selectedCustomerName},%0ATerima kasih atas kunjungan Anda di *${data.tenant?.nama || 'Buku Kas Salon'}*.%0A%0A*Rincian Transaksi (TRX-${checkoutResponse?.id}):*%0A${itemsText}%0A%0ATotal: *${formatRp(grandTotal)}*%0A%0ATerima kasih!`;
+    
+    window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
   }
 
   function resetTransaction() {
@@ -243,6 +268,7 @@
     uangDiterima = 0;
     isCheckoutSuccess = false;
     checkoutResponse = null;
+    showPrintOptions = false;
   }
 </script>
 
@@ -475,9 +501,20 @@
         {/if}
       </div>
 
-      <div class="modal-actions">
-        <button class="btn btn-secondary" on:click={printReceipt}>🖨️ Cetak Struk</button>
-        <button class="btn btn-primary" on:click={resetTransaction}>Transaksi Baru</button>
+      <div class="modal-actions" style="display: flex; gap: 0.5rem; position: relative;">
+        {#if !showPrintOptions}
+          <button class="btn btn-secondary" style="flex: 1;" on:click={() => showPrintOptions = true}>
+            🖨️ Cetak / Bagikan
+          </button>
+        {:else}
+          <button class="btn btn-secondary" style="flex: 1; padding: 0.5rem;" on:click={printReceipt}>
+            🖨️ Cetak Biasa
+          </button>
+          <button class="btn btn-secondary" style="flex: 1; padding: 0.5rem; background: #25D366; color: white; border-color: #25D366;" on:click={sendToWA}>
+            📱 Kirim WA
+          </button>
+        {/if}
+        <button class="btn btn-primary" style="flex: 1;" on:click={resetTransaction}>Transaksi Baru</button>
       </div>
     </div>
   </div>
