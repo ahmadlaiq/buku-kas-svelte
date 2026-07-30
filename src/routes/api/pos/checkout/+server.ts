@@ -66,6 +66,30 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             throw new Error(`Stok ${namaItem} tidak mencukupi (Sisa: ${material.stock})`);
           }
 
+          // FEFO Logic
+          const batches = await tx.materialBatch.findMany({
+            where: { material_id: materialId, stock: { gt: 0 } },
+          });
+
+          batches.sort((a, b) => {
+            if (a.expired_at && b.expired_at) return a.expired_at.getTime() - b.expired_at.getTime();
+            if (a.expired_at && !b.expired_at) return -1;
+            if (!a.expired_at && b.expired_at) return 1;
+            return a.created_at.getTime() - b.created_at.getTime();
+          });
+
+          let remainingToDeduct = item.qty;
+          for (const batch of batches) {
+            if (remainingToDeduct <= 0) break;
+            const deductAmount = Math.min(batch.stock, remainingToDeduct);
+            
+            await tx.materialBatch.update({
+              where: { id: batch.id },
+              data: { stock: batch.stock - deductAmount }
+            });
+            remainingToDeduct -= deductAmount;
+          }
+
           await tx.masterMaterial.update({
             where: { id: materialId },
             data: { stock: { decrement: item.qty } }

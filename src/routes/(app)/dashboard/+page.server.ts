@@ -118,6 +118,35 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     }
   });
 
+  // Fetch expiring items (next 30 days)
+  const thirtyDaysFromNow = new Date();
+  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+  const expiringItems = await prisma.materialBatch.findMany({
+    where: {
+      stock: { gt: 0 },
+      expired_at: {
+        not: null,
+        lte: thirtyDaysFromNow
+      },
+      material: {
+        ...tenantFilter,
+        jenis: 'BARANG'
+      }
+    },
+    orderBy: { expired_at: 'asc' },
+    select: {
+      id: true,
+      stock: true,
+      expired_at: true,
+      material: {
+        select: {
+          nama: true
+        }
+      }
+    }
+  });
+
   // Fetch all time data for trend chart
   const allPendapatan = await prisma.pendapatan.findMany({ where: { ...tenantFilter }, select: { tanggal: true, jumlah: true } });
   const allPengeluaran = await prisma.pengeluaran.findMany({ where: { ...tenantFilter }, select: { tanggal: true, jumlah: true } });
@@ -171,6 +200,12 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     recentPengeluaran: recentPengeluaran.map(p => ({
       ...p,
       tanggal: p.tanggal.toISOString().split('T')[0]
+    })),
+    expiringItems: expiringItems.map(item => ({
+      id: item.id,
+      nama: item.material.nama,
+      stock: item.stock,
+      expired_at: item.expired_at?.toISOString().split('T')[0]
     }))
   };
 };

@@ -232,8 +232,21 @@ model MasterMaterial {
   created_at DateTime @default(now()) @map("created_at")
   stock_logs StockLog[]
   pendapatan_details PendapatanDetail[]
+  batches    MaterialBatch[]
 
   @@map("master_material")
+}
+
+model MaterialBatch {
+  id          Int            @id @default(autoincrement())
+  material_id Int
+  material    MasterMaterial @relation(fields: [material_id], references: [id], onDelete: Cascade)
+  stock       Int            @default(0)
+  expired_at  DateTime?
+  created_at  DateTime       @default(now()) @map("created_at")
+  updated_at  DateTime       @updatedAt @map("updated_at")
+
+  @@map("material_batch")
 }
 
 model StockLog {

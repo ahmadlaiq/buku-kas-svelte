@@ -9,7 +9,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     }
 
     const body = await request.json();
-    const { barcode, action, qty = 1, latitude, longitude } = body;
+    const { barcode, action, qty = 1, expired_at, latitude, longitude } = body;
 
     if (!barcode || !action) {
       return json({ success: false, message: "Barcode dan action wajib diisi" }, { status: 400 });
@@ -46,12 +46,55 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
     const stockDiff = action === "add" ? quantity : -quantity;
 
+    const txOps: any[] = [];
+
+    if (action === "add") {
+      const expDate = expired_at ? new Date(expired_at) : null;
+      txOps.push(
+        prisma.materialBatch.create({
+          data: {
+            material_id: barang.id,
+            stock: quantity,
+            expired_at: expDate
+          }
+        })
+      );
+    } else if (action === "reduce") {
+      // FEFO Logic
+      const batches = await prisma.materialBatch.findMany({
+        where: { material_id: barang.id, stock: { gt: 0 } },
+      });
+
+      batches.sort((a, b) => {
+        if (a.expired_at && b.expired_at) return a.expired_at.getTime() - b.expired_at.getTime();
+        if (a.expired_at && !b.expired_at) return -1;
+        if (!a.expired_at && b.expired_at) return 1;
+        return a.created_at.getTime() - b.created_at.getTime();
+      });
+
+      let remainingToDeduct = quantity;
+      for (const batch of batches) {
+        if (remainingToDeduct <= 0) break;
+        const deductAmount = Math.min(batch.stock, remainingToDeduct);
+        
+        txOps.push(
+          prisma.materialBatch.update({
+            where: { id: batch.id },
+            data: { stock: batch.stock - deductAmount }
+          })
+        );
+        remainingToDeduct -= deductAmount;
+      }
+    }
+
     // Update stok
-    const [updatedBarang, log] = await prisma.$transaction([
+    txOps.push(
       prisma.masterMaterial.update({
         where: { id: barang.id },
         data: { stock: newStock },
-      }),
+      })
+    );
+    txOps.push(
       prisma.stockLog.create({
         data: {
           material_id: barang.id,
@@ -66,15 +109,17 @@ export const POST: RequestHandler = async ({ request, locals }) => {
           user_id: locals.user.id
         }
       })
-    ]);
+    );
+
+    await prisma.$transaction(txOps);
 
     return json({
       success: true,
       message: `Stok berhasil di${action === "add" ? "tambah" : "kurangi"}`,
       data: {
-        id: updatedBarang.id,
-        nama: updatedBarang.nama,
-        stock: updatedBarang.stock,
+        id: barang.id,
+        nama: barang.nama,
+        stock: newStock,
       },
     });
 

@@ -5,6 +5,7 @@
   let scanner: Html5Qrcode;
   let action = $state<"add" | "reduce">("add");
   let qty = $state(1);
+  let expiredAt = $state("");
   
   let scanStatus = $state<"idle" | "success" | "error" | "processing">("idle");
   let statusMessage = $state("");
@@ -131,6 +132,7 @@
           barcode: decodedText,
           action,
           qty,
+          expired_at: action === 'add' ? expiredAt : undefined,
           latitude,
           longitude
         }),
@@ -217,6 +219,18 @@
             inputmode="numeric" 
           />
         </div>
+
+        {#if action === 'add'}
+        <div class="qty-control" style="margin-top: 1rem;">
+          <label for="expiredAt">Exp. Date (Opsional):</label>
+          <input 
+            type="date" 
+            id="expiredAt" 
+            bind:value={expiredAt}
+            style="width: 130px; font-size: 1rem;"
+          />
+        </div>
+        {/if}
       </div>
 
       <!-- Scanner Box -->

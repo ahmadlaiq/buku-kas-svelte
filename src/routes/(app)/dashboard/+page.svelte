@@ -147,6 +147,46 @@
     </div>
   </div>
 
+  <!-- Expiring Items Alert -->
+  {#if data.expiringItems && data.expiringItems.length > 0}
+    <div class="card mb-lg" style="border-left: 4px solid #f59e0b;">
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; color: #d97706; font-weight: bold; font-size: 1.1rem;">
+        ⚠️ Peringatan: Barang Akan Kedaluwarsa
+      </div>
+      <p class="text-sm mb-md text-muted" style="margin-bottom: 1rem;">Barang berikut akan kedaluwarsa dalam 30 hari ke depan atau sudah kedaluwarsa.</p>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Nama Barang</th>
+              <th>Sisa Stok</th>
+              <th>Tanggal Expired</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each data.expiringItems as item}
+              {@const isExpired = new Date(item.expired_at) < new Date()}
+              {@const daysLeft = Math.ceil((new Date(item.expired_at).getTime() - new Date().getTime()) / (1000 * 3600 * 24))}
+              <tr>
+                <td class="font-medium">{item.nama}</td>
+                <td>{item.stock}</td>
+                <td>{formatDate(item.expired_at)}</td>
+                <td>
+                  {#if isExpired}
+                    <span style="background: #fee2e2; color: #991b1b; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.75rem; font-weight: 600;">Sudah Kedaluwarsa</span>
+                  {:else}
+                    <span style="background: #fef3c7; color: #d97706; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.75rem; font-weight: 600;">H-{daysLeft} Hari</span>
+                  {/if}
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {/if}
+
   <!-- Stats Grid -->
   <div class="stats-grid">
     <div class="stat-card">
