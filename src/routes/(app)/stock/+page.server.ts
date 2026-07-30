@@ -107,4 +107,75 @@ export const actions: Actions = {
       return fail(500, { message: "Gagal mengupdate stok" });
     }
   },
+  useMaterial: async ({ request, locals }) => {
+    if (!locals.user) return fail(401, { message: "Unauthorized" });
+    const data = await request.formData();
+    const itemsStr = data.get("items")?.toString();
+    const keterangan = data.get("keterangan")?.toString() || "Pemakaian bahan operasional";
+
+    if (!itemsStr) {
+      return fail(400, { message: "Data barang tidak ditemukan" });
+    }
+
+    try {
+      const items = JSON.parse(itemsStr);
+      if (!Array.isArray(items) || items.length === 0) {
+        return fail(400, { message: "Data barang tidak valid" });
+      }
+
+      const txOps = [];
+
+      for (const item of items) {
+        const id = Number(item.id);
+        const jumlah = Number(item.jumlah);
+
+        if (!id || isNaN(jumlah) || jumlah <= 0) continue;
+
+        const existing = await prisma.masterMaterial.findUnique({ 
+          where: { id, ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) } 
+        });
+
+        if (!existing) {
+          return fail(404, { message: `Barang dengan ID ${id} tidak ditemukan` });
+        }
+
+        if (existing.stock < jumlah) {
+          return fail(400, { message: `Stok ${existing.nama} tidak mencukupi. Sisa stok: ${existing.stock}` });
+        }
+
+        const newStock = existing.stock - jumlah;
+
+        txOps.push(
+          prisma.masterMaterial.update({
+            where: { id },
+            data: { stock: newStock },
+          })
+        );
+        txOps.push(
+          prisma.stockLog.create({
+            data: {
+              material_id: id,
+              jenis: "OUT",
+              jumlah: -jumlah,
+              stok_sebelum: existing.stock,
+              stok_sesudah: newStock,
+              keterangan: keterangan,
+              ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}),
+              user_id: locals.user.id
+            }
+          })
+        );
+      }
+
+      if (txOps.length === 0) {
+        return fail(400, { message: "Tidak ada data barang yang valid untuk diproses" });
+      }
+
+      await prisma.$transaction(txOps);
+      return { success: true, message: "Pemakaian bahan berhasil dicatat" };
+    } catch (error) {
+      console.error(error);
+      return fail(500, { message: "Gagal mencatat pemakaian bahan" });
+    }
+  },
 };

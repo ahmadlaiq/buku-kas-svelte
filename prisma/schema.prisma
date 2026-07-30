@@ -219,6 +219,7 @@ model MasterMaterial {
   id         Int      @id @default(autoincrement())
   jenis      String   // Akan berisi "JASA" atau "BARANG"
   kategori   String?  // Contoh: "Nail Art", "Hair Treatment", "Produk", "Potong Rambut"
+  tipe_barang String? // "Habis Pakai" atau "Dijual" (khusus untuk jenis BARANG)
   nama       String   @unique
   harga      Float?   // Harga standar
   stock      Int      @default(0)

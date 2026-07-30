@@ -87,6 +87,7 @@
       <thead>
         <tr>
           <th>Nama Barang</th>
+          <th>Tipe</th>
           <th>Kategori</th>
           <th>Harga Default</th>
           <th>Barcode</th>
@@ -98,6 +99,15 @@
         {#each data.material as item}
           <tr>
             <td class="font-medium">{item.nama}</td>
+            <td>
+              {#if item.tipe_barang === 'Habis Pakai'}
+                <span class="badge badge-primary">Habis Pakai</span>
+              {:else if item.tipe_barang === 'Dijual'}
+                <span class="badge badge-success">Dijual</span>
+              {:else}
+                -
+              {/if}
+            </td>
             <td>{item.kategori || '-'}</td>
             <td>{item.harga ? formatCurrency(item.harga) : '-'}</td>
             <td><code>{item.barcode || '-'}</code></td>
@@ -179,6 +189,14 @@
           <input type="text" id="nama" name="nama" class="form-control" required placeholder="Contoh: Shampo 500ml" />
         </div>
         <div class="form-group">
+          <label for="tipe_barang" class="form-label">Tipe Barang</label>
+          <select id="tipe_barang" name="tipe_barang" class="form-control">
+            <option value="">-- Pilih Tipe --</option>
+            <option value="Habis Pakai">Habis Pakai (Pemakaian Internal)</option>
+            <option value="Dijual">Dijual (Kasir/POS)</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label for="kategori" class="form-label">Kategori</label>
           <input type="text" id="kategori" name="kategori" class="form-control" placeholder="Contoh: Produk Rambut, Skincare" />
         </div>
@@ -217,6 +235,14 @@
           <input type="text" id="edit-nama" name="nama" class="form-control" required bind:value={editItem.nama} />
         </div>
         <div class="form-group">
+          <label for="edit-tipe_barang" class="form-label">Tipe Barang</label>
+          <select id="edit-tipe_barang" name="tipe_barang" class="form-control" bind:value={editItem.tipe_barang}>
+            <option value="" selected={!editItem.tipe_barang}>-- Pilih Tipe --</option>
+            <option value="Habis Pakai">Habis Pakai (Pemakaian Internal)</option>
+            <option value="Dijual">Dijual (Kasir/POS)</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label for="edit-kategori" class="form-label">Kategori</label>
           <input type="text" id="edit-kategori" name="kategori" class="form-control" bind:value={editItem.kategori} />
         </div>
@@ -248,6 +274,7 @@
   .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
   .badge-success { background: #dcfce7; color: #166534; }
   .badge-danger { background: #fee2e2; color: #991b1b; }
+  .badge-primary { background: #e0e7ff; color: #3730a3; }
   .btn-warning { background: #f59e0b; color: white; border: none; }
   .btn-success { background: #22c55e; color: white; border: none; }
   code { font-size: 0.8rem; background: #f3f4f6; padding: 0.1rem 0.4rem; border-radius: 4px; }

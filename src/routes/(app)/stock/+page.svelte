@@ -16,24 +16,50 @@
   let selectedBarang = $state<any>(null);
   let showEditStock = $state(false);
   let showEditBarcode = $state(false);
+  let showBulkUseMaterial = $state(false);
   let showLogModal = $state(false);
+  
+  let bulkUseItems = $state([{ id: '', jumlah: 1, searchQuery: '', isOpen: false }]);
+  let bulkKeterangan = $state('');
 
   function openEditStock(barang: any) {
     selectedBarang = barang;
     showEditStock = true;
     showEditBarcode = false;
+    showBulkUseMaterial = false;
   }
 
   function openEditBarcode(barang: any) {
     selectedBarang = barang;
     showEditBarcode = true;
     showEditStock = false;
+    showBulkUseMaterial = false;
+  }
+
+  function openBulkUseMaterial() {
+    bulkUseItems = [{ id: '', jumlah: 1, searchQuery: '', isOpen: false }];
+    bulkKeterangan = '';
+    showBulkUseMaterial = true;
+    showEditStock = false;
+    showEditBarcode = false;
+  }
+
+  function addBulkItem() {
+    bulkUseItems = [...bulkUseItems, { id: '', jumlah: 1, searchQuery: '', isOpen: false }];
+  }
+
+  function removeBulkItem(index: number) {
+    bulkUseItems = bulkUseItems.filter((_, i) => i !== index);
+    if (bulkUseItems.length === 0) {
+      addBulkItem();
+    }
   }
 
   function closeEdit() {
     selectedBarang = null;
     showEditStock = false;
     showEditBarcode = false;
+    showBulkUseMaterial = false;
   }
 
   function formatDate(dateStr: string) {
@@ -58,6 +84,9 @@
       <p class="text-muted">Kelola stok dan barcode barang</p>
     </div>
     <div class="flex gap-md">
+      <button class="btn btn-warning" onclick={openBulkUseMaterial}>
+        📉 Catat Pemakaian
+      </button>
       <a href="/scan-barang" class="btn btn-primary">
         📷 Scan Barang
       </a>
@@ -97,6 +126,7 @@
             <tr>
               <th>No</th>
               <th>Nama Barang</th>
+              <th>Tipe</th>
               <th>Kategori</th>
               <th style="text-align: center;">Stok</th>
               <th>Barcode</th>
@@ -108,6 +138,15 @@
               <tr>
                 <td>{i + 1}</td>
                 <td class="font-semibold">{barang.nama}</td>
+                <td>
+                  {#if barang.tipe_barang === 'Habis Pakai'}
+                    <span class="badge badge-primary">Habis Pakai</span>
+                  {:else if barang.tipe_barang === 'Dijual'}
+                    <span class="badge badge-success">Dijual</span>
+                  {:else}
+                    -
+                  {/if}
+                </td>
                 <td>
                   {#if barang.kategori}
                     <span class="badge badge-primary">{barang.kategori}</span>
@@ -229,6 +268,104 @@
   </div>
 {/if}
 
+<!-- Modal Pemakaian Bahan Bulk -->
+{#if showBulkUseMaterial}
+  <div class="modal-overlay" onclick={closeEdit}>
+    <div class="modal-content" onclick={(e) => e.stopPropagation()} style="max-width: 600px;">
+      <div class="modal-header">
+        <h2>📉 Catat Pemakaian Bahan</h2>
+        <button onclick={closeEdit} class="modal-close">✕</button>
+      </div>
+      <form method="POST" action="?/useMaterial" use:enhance={() => {
+        return async ({ result, update }) => {
+          if (result.type === 'success') {
+            closeEdit();
+            invalidateAll();
+          }
+          await update();
+        };
+      }}>
+        <div class="modal-body flex flex-col gap-md">
+          <input type="hidden" name="items" value={JSON.stringify(bulkUseItems)} />
+          
+          <div class="form-group">
+            <label class="form-label mb-2 block">Daftar Barang yang Dipakai</label>
+            {#each bulkUseItems as item, i}
+              <div class="flex gap-sm mb-sm items-center">
+                <div style="flex: 2; position: relative;">
+                  <input
+                    type="text"
+                    class="form-input"
+                    placeholder="Ketik untuk mencari barang..."
+                    bind:value={item.searchQuery}
+                    onfocus={() => { item.isOpen = true; }}
+                    onblur={() => { setTimeout(() => { item.isOpen = false; }, 200); }}
+                  />
+                  {#if item.isOpen}
+                    <div class="search-dropdown">
+                      {#each data.barangs.filter(b => b.nama.toLowerCase().includes((item.searchQuery || '').toLowerCase())) as b}
+                        <button
+                          type="button"
+                          class="search-dropdown-item {b.stock <= 0 ? 'disabled' : ''}"
+                          disabled={b.stock <= 0}
+                          onclick={() => { 
+                            item.id = b.id; 
+                            item.searchQuery = b.nama; 
+                            item.isOpen = false; 
+                          }}
+                        >
+                          <div class="font-medium">{b.nama}</div>
+                          <div class="text-xs text-muted">Sisa Stok: {b.stock}</div>
+                        </button>
+                      {/each}
+                      {#if data.barangs.filter(b => b.nama.toLowerCase().includes((item.searchQuery || '').toLowerCase())).length === 0}
+                        <div style="padding: 0.5rem; text-align: center; color: var(--neutral-500); font-size: 0.875rem;">
+                          Barang tidak ditemukan
+                        </div>
+                      {/if}
+                    </div>
+                  {/if}
+                </div>
+                <input
+                  type="number"
+                  class="form-input"
+                  style="flex: 1; max-width: 100px;"
+                  bind:value={item.jumlah}
+                  required
+                  min="1"
+                  placeholder="Jml"
+                />
+                <button type="button" class="btn btn-danger btn-sm" onclick={() => removeBulkItem(i)} title="Hapus baris ini">
+                  ✕
+                </button>
+              </div>
+            {/each}
+            <button type="button" class="btn btn-secondary btn-sm mt-2" onclick={addBulkItem}>
+              + Tambah Barang Lain
+            </button>
+          </div>
+
+          <div class="form-group mt-md">
+            <label for="keterangan" class="form-label">Keterangan Umum (Opsional)</label>
+            <input
+              type="text"
+              id="keterangan"
+              name="keterangan"
+              class="form-input"
+              bind:value={bulkKeterangan}
+              placeholder="Contoh: Pemakaian operasional harian"
+            />
+          </div>
+        </div>
+        <div class="flex gap-md" style="margin-top: var(--space-xl)">
+          <button type="submit" class="btn btn-primary" style="flex: 1;" disabled={bulkUseItems.some(i => !i.id || i.jumlah < 1)}>📉 Simpan Pemakaian</button>
+          <button type="button" class="btn btn-secondary" onclick={closeEdit} style="flex: 1;">✕ Batal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{/if}
+
 <!-- Modal Log -->
 {#if showLogModal}
   <div class="modal-overlay" onclick={() => (showLogModal = false)}>
@@ -294,6 +431,46 @@
   .text-success { color: #1e8e3e; }
   .text-danger { color: #d93025; }
   
+  .search-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--neutral-300);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 50;
+    margin-top: 4px;
+  }
+
+  .search-dropdown-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    background: none;
+    border-bottom: 1px solid var(--neutral-100);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .search-dropdown-item:last-child {
+    border-bottom: none;
+  }
+
+  .search-dropdown-item:hover:not(.disabled) {
+    background: var(--neutral-100);
+  }
+
+  .search-dropdown-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   .modal-overlay {
     position: fixed;
     top: 0;

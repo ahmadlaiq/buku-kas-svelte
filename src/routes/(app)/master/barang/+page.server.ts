@@ -61,6 +61,7 @@ export const actions: Actions = {
     const data = await request.formData();
     const nama = data.get('nama') as string;
     const kategori = data.get('kategori') as string;
+    const tipe_barang = data.get('tipe_barang') as string;
     const harga = data.get('harga') ? Number(data.get('harga')) : null;
     const barcode = data.get('barcode') as string;
 
@@ -71,7 +72,8 @@ export const actions: Actions = {
         data: { 
           nama, 
           jenis: 'BARANG', 
-          kategori: kategori || null, 
+          kategori: kategori || null,
+          tipe_barang: tipe_barang || null,
           harga, 
           barcode: barcode || null,
           tenant_id: locals.user.tenant_id!,
@@ -95,6 +97,7 @@ export const actions: Actions = {
     const id = Number(data.get('id'));
     const nama = data.get('nama') as string;
     const kategori = data.get('kategori') as string;
+    const tipe_barang = data.get('tipe_barang') as string;
     const harga = data.get('harga') ? Number(data.get('harga')) : null;
     const barcode = data.get('barcode') as string;
 
@@ -103,7 +106,7 @@ export const actions: Actions = {
     try {
       await prisma.masterMaterial.update({
         where: { id, ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) },
-        data: { nama, kategori: kategori || null, harga, barcode: barcode || null }
+        data: { nama, kategori: kategori || null, tipe_barang: tipe_barang || null, harga, barcode: barcode || null }
       });
       return { success: true };
     } catch (error: any) {
