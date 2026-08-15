@@ -162,8 +162,8 @@
                 <td class="text-muted">{barang.barcode || "Belum ada"}</td>
                 <td style="text-align: center;">
                   <div class="flex justify-center gap-sm">
-                    <button class="btn btn-sm btn-success" onclick={() => openEditStock(barang)}>
-                      ➕ Tambah Stok
+                    <button class="btn btn-warning btn-sm" onclick={() => openEditStock(barang)}>
+                      ✏️ Edit Stok
                     </button>
                     <button class="btn btn-primary btn-sm" onclick={() => openEditBarcode(barang)}>
                       🏷️ Set Barcode
@@ -188,10 +188,10 @@
   <div class="modal-overlay" onclick={closeEdit}>
     <div class="modal-content" onclick={(e) => e.stopPropagation()}>
       <div class="modal-header">
-        <h2>➕ Tambah Stok {selectedBarang.nama}</h2>
+        <h2>✏️ Edit Stok {selectedBarang.nama}</h2>
         <button onclick={closeEdit} class="modal-close">✕</button>
       </div>
-      <form method="POST" action="?/addStock" use:enhance={() => {
+      <form method="POST" action="?/editStock" use:enhance={() => {
         return async ({ result, update }) => {
           if (result.type === 'success') {
             closeEdit();
@@ -203,24 +203,25 @@
         <div class="modal-body">
           <input type="hidden" name="id" value={selectedBarang.id} />
           <div class="form-group">
-            <label for="stock" class="form-label">Jumlah Tambah Stok</label>
+            <label for="new_stock" class="form-label">Stok Aktual (Saat Ini: {selectedBarang.stock})</label>
             <input
               type="number"
-              id="stock"
-              name="stock"
+              id="new_stock"
+              name="new_stock"
               class="form-input"
-              value="1"
+              value={selectedBarang.stock}
               required
-              min="1"
+              min="0"
             />
           </div>
           <div class="form-group mt-md">
-            <label for="expired_at" class="form-label">Tanggal Expired (Opsional)</label>
+            <label for="keterangan" class="form-label">Keterangan Penyesuaian (Opsional)</label>
             <input
-              type="date"
-              id="expired_at"
-              name="expired_at"
+              type="text"
+              id="keterangan"
+              name="keterangan"
               class="form-input"
+              placeholder="Contoh: Stok opname, rusak, dll"
             />
           </div>
         </div>
@@ -317,7 +318,7 @@
                           type="button"
                           class="search-dropdown-item {b.stock <= 0 ? 'disabled' : ''}"
                           disabled={b.stock <= 0}
-                          onclick={() => { 
+                          onmousedown={() => { 
                             item.id = b.id; 
                             item.searchQuery = b.nama; 
                             item.isOpen = false; 

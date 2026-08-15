@@ -65,51 +65,96 @@ export const actions: Actions = {
       return fail(500, { message: "Gagal mengupdate barcode" });
     }
   },
-  addStock: async ({ request, locals }) => {
+  editStock: async ({ request, locals }) => {
     if (!locals.user) return fail(401, { message: "Unauthorized" });
     const data = await request.formData();
     const id = Number(data.get("id"));
-    const stock = Number(data.get("stock"));
-    const expired_at_str = data.get("expired_at")?.toString();
-    const expired_at = expired_at_str ? new Date(expired_at_str) : null;
+    const new_stock = Number(data.get("new_stock"));
+    const keterangan = data.get("keterangan")?.toString() || "Penyesuaian stok";
 
-    if (!id || isNaN(stock) || stock <= 0) {
-      return fail(400, { message: "Jumlah stok tidak valid (minimal 1)" });
+    if (!id || isNaN(new_stock) || new_stock < 0) {
+      return fail(400, { message: "Jumlah stok tidak valid (minimal 0)" });
     }
 
     try {
       const existing = await prisma.masterMaterial.findUnique({ where: { id, ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}) } });
       if (!existing) return fail(404, { message: "Barang tidak ditemukan" });
 
-      await prisma.$transaction([
-        prisma.materialBatch.create({
-          data: {
-            material_id: id,
-            stock: stock,
-            expired_at: expired_at
-          }
-        }),
+      const diff = new_stock - existing.stock;
+      if (diff === 0) {
+        return { success: true, message: "Tidak ada perubahan pada stok" };
+      }
+
+      const txOps: any[] = [];
+
+      if (diff > 0) {
+        // Penambahan stok: buat batch baru
+        txOps.push(
+          prisma.materialBatch.create({
+            data: {
+              material_id: id,
+              stock: diff,
+              // expired_at dibiarkan kosong karena ini penyesuaian umum
+            }
+          })
+        );
+      } else {
+        // Pengurangan stok: potong dari batch yang ada (FEFO)
+        const jumlahDeduct = Math.abs(diff);
+        const batches = await prisma.materialBatch.findMany({
+          where: { material_id: id, stock: { gt: 0 } },
+        });
+
+        batches.sort((a, b) => {
+          if (a.expired_at && b.expired_at) return a.expired_at.getTime() - b.expired_at.getTime();
+          if (a.expired_at && !b.expired_at) return -1;
+          if (!a.expired_at && b.expired_at) return 1;
+          return a.created_at.getTime() - b.created_at.getTime();
+        });
+
+        let remainingToDeduct = jumlahDeduct;
+        for (const batch of batches) {
+          if (remainingToDeduct <= 0) break;
+          const deductAmount = Math.min(batch.stock, remainingToDeduct);
+          txOps.push(
+            prisma.materialBatch.update({
+              where: { id: batch.id },
+              data: { stock: batch.stock - deductAmount }
+            })
+          );
+          remainingToDeduct -= deductAmount;
+        }
+      }
+
+      // Update total stok di material master
+      txOps.push(
         prisma.masterMaterial.update({
           where: { id },
-          data: { stock: { increment: stock } },
-        }),
+          data: { stock: new_stock },
+        })
+      );
+
+      // Catat log
+      txOps.push(
         prisma.stockLog.create({
           data: {
             material_id: id,
-            jenis: "IN",
-            jumlah: stock,
+            jenis: diff > 0 ? "ADJUST_IN" : "ADJUST_OUT",
+            jumlah: diff,
             stok_sebelum: existing.stock,
-            stok_sesudah: existing.stock + stock,
-            keterangan: "Penambahan stok baru",
+            stok_sesudah: new_stock,
+            keterangan: keterangan,
             ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}),
             user_id: locals.user.id
           }
         })
-      ]);
-      return { success: true, message: "Stok berhasil ditambahkan" };
+      );
+
+      await prisma.$transaction(txOps);
+      return { success: true, message: "Penyesuaian stok berhasil disimpan" };
     } catch (error) {
-      console.error("Error adding stock:", error);
-      return fail(500, { message: "Gagal menambahkan stok" });
+      console.error("Error adjusting stock:", error);
+      return fail(500, { message: "Gagal menyesuaikan stok" });
     }
   },
   useMaterial: async ({ request, locals }) => {
