@@ -36,7 +36,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     cookies.set('session', token, {
       path: '/',
       httpOnly: true,
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7 // 7 days
     });
 

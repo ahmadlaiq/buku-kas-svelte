@@ -9,27 +9,29 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   const endOfMonth = new Date(startOfMonth);
   endOfMonth.setMonth(endOfMonth.getMonth() + 1);
   
-  // Get all income grouped by category
-  const pendapatanData = await prisma.pendapatan.groupBy({
+  // Get all income grouped by category from PendapatanDetail
+  const pendapatanData = await prisma.pendapatanDetail.groupBy({
     by: ['kategori'],
-    _sum: { jumlah: true },
+    _sum: { subtotal: true },
     where: {
-      ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}),
-      tanggal: {
-        gte: startOfMonth,
-        lt: endOfMonth
+      pendapatan: {
+        ...(locals.user.tenant_id ? { tenant_id: locals.user.tenant_id } : {}),
+        tanggal: {
+          gte: startOfMonth,
+          lt: endOfMonth
+        }
       }
     },
     orderBy: {
       _sum: {
-        jumlah: 'desc'
+        subtotal: 'desc'
       }
     }
   });
 
   const pendapatan = pendapatanData.map(p => ({
-    kategori: p.kategori,
-    total: p._sum.jumlah || 0
+    kategori: p.kategori || 'Umum',
+    total: p._sum.subtotal || 0
   }));
 
   const totalPendapatanResult = await prisma.pendapatan.aggregate({

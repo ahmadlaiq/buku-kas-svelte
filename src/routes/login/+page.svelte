@@ -18,7 +18,9 @@
       const data = await response.json();
 
       if (response.ok) {
-        // Cookie is set by server, just redirect
+        if (typeof window !== 'undefined' && data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
         window.location.href = '/dashboard';
       } else {
         error = data.error || 'Login gagal';

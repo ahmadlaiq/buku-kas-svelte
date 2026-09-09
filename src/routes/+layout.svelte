@@ -6,15 +6,15 @@
 
   let { children } = $props();
 
-  // Check authentication on page load
+  // Sync auth store if user data exists in localStorage
   $effect(() => {
     if (typeof window !== 'undefined') {
       const userStr = localStorage.getItem('user');
       if (userStr) {
-        const user = JSON.parse(userStr);
-        authStore.setUser(user);
-      } else if ($page.url.pathname !== '/login' && $page.url.pathname !== '/' && $page.url.pathname !== '/scan-barang') {
-        goto('/login');
+        try {
+          const user = JSON.parse(userStr);
+          authStore.setUser(user);
+        } catch (e) {}
       }
     }
   });

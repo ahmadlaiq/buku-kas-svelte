@@ -12,7 +12,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   }
 
   // Redirect to login if accessing protected routes without session
-  const protectedRoutes = ['/dashboard', '/pendapatan', '/pengeluaran', '/master', '/stock', '/beban', '/laporan', '/scan-barang'];
+  const protectedRoutes = ['/dashboard', '/pendapatan', '/pengeluaran', '/master', '/stock', '/beban', '/laporan', '/scan-barang', '/pos-kasir'];
   const isProtectedRoute = protectedRoutes.some(route => event.url.pathname.startsWith(route));
 
   if (isProtectedRoute) {
